@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Talen{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Talen</h2>
+  <p class="muted">Kies de gewenste taal voor de gebruiker. De Follow O-I layout en styling blijven ongewijzigd.</p>
+  {% if saved %}<div class="flash">Taal opgeslagen.</div>{% endif %}
+  <form method="post">
+    <div class="form-row">
+      <div>
+        <label>Taal</label>
+        <select name="language">
+          {% for code, name in LANGUAGES.items() %}
+          <option value="{{ code }}" {% if user.language == code %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <br>
+    <button class="btn">Opslaan</button>
+  </form>
+</div>
+{% endblock %}

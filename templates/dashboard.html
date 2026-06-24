@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="grid grid4">
+  <div class="card"><div class="muted">Klanten</div><div class="kpi">{{ stats.clients }}</div></div>
+  <div class="card"><div class="muted">Assets</div><div class="kpi">{{ stats.assets }}</div></div>
+  <div class="card"><div class="muted">Open offertes</div><div class="kpi">{{ stats.orders }}</div></div>
+  <div class="card"><div class="muted">Open tickets/schades</div><div class="kpi">{{ stats.tickets + stats.damages }}</div></div>
+</div>
+
+<div class="grid grid2">
+  <div class="card">
+    <h2>Snelle acties</h2>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('marketplace') }}">Circulaire marketplace</a>
+      <a class="btn secondary" href="{{ url_for('ticket_new') }}">Ticket aanmaken</a>
+      <a class="btn secondary" href="{{ url_for('products') }}">Productcatalogus</a>
+      <a class="btn secondary" href="{{ url_for('orders') }}">Offerteoverzicht</a>
+    </div>
+  </div>
+
+  <div class="card contact-card">
+    <h2>Jouw vaste aanspreekpunt</h2>
+    <div class="asset-title">Caspar Mastenbroek</div>
+    <p class="muted">Sales Director | Follow O-I</p>
+    <p>
+      <strong>E-mail:</strong> <a href="mailto:caspar@office-interior.nl">caspar@office-interior.nl</a><br>
+      <strong>Telefoon:</strong> <a href="tel:+31626983165">06 2698 3165</a>
+    </p>
+    <p class="muted">Voor vragen over inrichting, hergebruik, service, verhuizingen of nieuwe projecten.</p>
+    <p class="muted">Voor algemene vragen of bij afwezigheid kun je contact opnemen via <a href="mailto:info@office-interior.com">info@office-interior.com</a> of <a href="tel:+31850481444">085-0481444</a>.</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Recent meubilair</h2>
+  <table>
+    <tr><th>Asset</th><th>Klant</th><th>Categorie</th><th>Locatie</th><th>Status</th></tr>
+    {% for a in recent %}
+    <tr><td>{{ a.asset_code }}</td><td>{{ a.client_name }}</td><td>{{ a.category }}</td><td>{{ a.location }} {{ a.room }}</td><td>{{ a.status }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Asset detail{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="actions" style="justify-content:space-between;align-items:flex-start">
+    <div>
+      <h2>{{ asset.asset_code }} - {{ asset.category }}</h2>
+      <div class="muted">{{ asset.client_name }} · {{ asset.brand or '-' }} {{ asset.model or '' }}</div>
+    </div>
+    <a class="btn secondary" href="{{ url_for('assets') }}">Terug naar huidig meubilair</a>
+  </div>
+</div>
+
+<div class="grid grid2">
+  <div class="card">
+    <h2>Foto</h2>
+    {% if asset.photo_path %}
+      <img src="{{ url_for('uploads', filename=asset.photo_path) }}" style="max-width:100%;border-radius:16px;border:1px solid var(--line);margin-bottom:12px">
+      {% if asset.photo_note %}<div class="muted">{{ asset.photo_note }}</div>{% endif %}
+    {% else %}
+      <div class="muted">Nog geen foto gekoppeld aan deze asset.</div>
+    {% endif %}
+
+    {% if has_perm('edit_assets') %}
+    <form method="post" enctype="multipart/form-data" style="margin-top:16px">
+      <input type="hidden" name="action" value="photo">
+      <label>Foto koppelen of vervangen</label>
+      <input type="file" name="asset_photo" accept="image/*">
+      <label>Notitie bij foto</label>
+      <input name="photo_note" value="{{ asset.photo_note or '' }}" placeholder="Bijvoorbeeld: hoofdfoto werkplek / schade zichtbaar / showroomfoto">
+      <p><button class="btn" type="submit">Foto opslaan</button></p>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Assetgegevens</h2>
+    <table>
+      <tr><th>Klant</th><td>{{ asset.client_name }}</td></tr>
+      <tr><th>Categorie</th><td>{{ asset.category }}</td></tr>
+      <tr><th>Merk / model</th><td>{{ asset.brand or '-' }} {{ asset.model or '' }}</td></tr>
+      <tr><th>Locatie</th><td>{{ asset.location or '-' }} · {{ asset.floor or '-' }} · {{ asset.room or '-' }}</td></tr>
+      <tr><th>Conditie</th><td>{{ asset.condition_score or '-' }}/5</td></tr>
+      <tr><th>Uitgeleverd</th><td>{{ asset.purchase_date or '-' }}</td></tr>
+      <tr><th>Laatste service</th><td>{{ asset.last_service or '-' }}</td></tr>
+      <tr><th>Status</th><td>{{ asset.status }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Verhuisregistratie</h2>
+  {% if has_perm('edit_assets') %}
+  <form method="post" class="grid grid2" style="margin-bottom:18px">
+    <input type="hidden" name="action" value="move">
+    <div><label>Nieuwe locatie</label><input name="to_location" value="{{ asset.location or '' }}"></div>
+    <div><label>Nieuwe ruimte</label><input name="to_room" value="{{ asset.room or '' }}"></div>
+    <div><label>Nieuwe verdieping</label><input name="to_floor" value="{{ asset.floor or '' }}"></div>
+    <div><label>Datum verhuizing</label><input type="date" name="moved_at"></div>
+    <div style="grid-column:1/-1"><label>Notitie</label><textarea name="note" rows="2" placeholder="Bijvoorbeeld: interne verhuizing, herplaatsing of projectfase"></textarea></div>
+    <div><button class="btn" type="submit">Verhuizing registreren</button></div>
+  </form>
+  {% endif %}
+
+  <table>
+    <tr><th>Datum</th><th>Van</th><th>Naar</th><th>Notitie</th><th>Door</th></tr>
+    {% for m in movements %}
+    <tr>
+      <td>{{ m.moved_at }}</td>
+      <td>{{ m.from_location or '-' }} · {{ m.from_floor or '-' }} · {{ m.from_room or '-' }}</td>
+      <td>{{ m.to_location or '-' }} · {{ m.to_floor or '-' }} · {{ m.to_room or '-' }}</td>
+      <td>{{ m.note or '-' }}</td>
+      <td>{{ m.created_by_name or '-' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">Nog geen verhuisregistratie beschikbaar.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

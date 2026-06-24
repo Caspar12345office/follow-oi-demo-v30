@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block public %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+  body{margin:0;background:#0b100c;font-family:'Montserrat',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  .login-shell{min-height:100vh;position:relative;overflow:hidden;color:#fff;background:#0b100c url('{{ url_for("login_assets", filename="follow_oi_login_hero.png") }}') center/cover no-repeat}
+  .login-shell:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,10,7,.76) 0%,rgba(7,13,9,.54) 34%,rgba(9,13,8,.22) 58%,rgba(7,10,6,.52) 100%);pointer-events:none}
+  .login-shell:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 22% 18%,rgba(255,255,255,.13),transparent 27%),radial-gradient(circle at 74% 20%,rgba(255,255,255,.08),transparent 28%);pointer-events:none}
+  .hero-layer{position:relative;z-index:1;min-height:100vh;display:grid;grid-template-columns:minmax(560px,1fr) minmax(430px,520px);gap:64px;align-items:center;padding:72px 76px 54px;box-sizing:border-box}
+  .brand-block{position:absolute;left:76px;top:70px;z-index:2}.brand-name{font-size:86px;line-height:.94;font-weight:900;letter-spacing:-.055em;text-shadow:0 12px 36px rgba(0,0,0,.28)}.brand-label{margin-top:14px;font-size:17px;letter-spacing:.24em;text-transform:uppercase;font-weight:600;color:rgba(255,255,255,.86)}
+  .hero-copy{max-width:620px;margin-top:105px}.hero-title{font-size:0;margin:0}.hero-subtitle{margin:0 0 62px;color:#78b743;font-size:33px;line-height:1.18;font-weight:800;letter-spacing:-.025em;text-shadow:0 8px 32px rgba(0,0,0,.35)}
+  .hero-points{display:grid;gap:32px;max-width:590px}.hero-point{display:grid;grid-template-columns:78px 1fr;gap:23px;align-items:start}.hero-ico{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(5px);color:#fff;font-size:34px;box-shadow:0 18px 42px rgba(0,0,0,.18)}.hero-point strong{display:block;color:#fff;font-size:22px;line-height:1.34;font-weight:600;letter-spacing:-.015em;text-shadow:0 8px 24px rgba(0,0,0,.32)}.hero-point span{display:block;margin-top:10px;color:rgba(255,255,255,.92);font-size:16px;line-height:1.55;font-weight:400;text-shadow:0 8px 24px rgba(0,0,0,.32)}
+  .trust-strip{position:absolute;left:76px;bottom:56px;z-index:2;display:flex;align-items:flex-start;gap:34px;padding-top:24px;border-top:1px solid rgba(255,255,255,.24);min-width:650px}.trust-item{display:grid;grid-template-columns:34px auto;gap:12px;align-items:start;color:#fff;min-width:0}.trust-item:not(:last-child){padding-right:30px;border-right:1px solid rgba(255,255,255,.24)}.trust-item b{font-size:28px;line-height:1;color:#78b743}.trust-item span{display:block;font-size:15px;line-height:1.24;font-weight:600;white-space:normal}.trust-item small{display:block;font-size:12px;line-height:1.35;color:rgba(255,255,255,.82);font-weight:400;margin-top:3px}
+  .login-panel{justify-self:end;width:min(440px,100%);background:#fff;color:#111827;border-radius:16px;padding:34px 34px 30px;box-shadow:0 28px 80px rgba(0,0,0,.36);border:1px solid rgba(255,255,255,.68)}.login-panel h1{font-size:31px;line-height:1.1;margin:0 0 10px;color:#0f172a;font-weight:800;letter-spacing:-.035em}.muted{color:#6b7280;line-height:1.55;margin:0 0 22px;font-size:14px}.form-field{margin-top:18px}.form-field label{display:block;margin-bottom:9px;font-size:13px;font-weight:800;color:#111827}.form-field input,.form-field select,.form-field textarea{box-sizing:border-box;width:100%;background:#fff;border:1px solid #d8dee8;border-radius:8px;padding:14px 15px;font:inherit;color:#111827;outline:none}.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:#78b743;box-shadow:0 0 0 3px rgba(120,183,67,.12)}.form-field textarea{min-height:84px;resize:vertical}.row{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:18px 0 6px;color:#4b5563;font-size:13px}.check{display:flex;align-items:center;gap:8px}.check input{width:auto}.link{color:#5fa323;text-decoration:none;font-weight:800}.btn{width:100%;border:0;border-radius:8px;padding:15px 16px;font-size:15px;font-weight:800;margin-top:18px;background:#65ae25;color:#fff;cursor:pointer;box-shadow:0 10px 24px rgba(101,174,37,.20)}.btn:hover{filter:brightness(.96)}.btn.outline{background:#fff;color:#111827;border:1px solid #91c874;box-shadow:none}.splitter{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;color:#69717c;margin:24px 0 8px}.splitter:before,.splitter:after{content:"";height:1px;background:#e5e7eb}.account-panel{display:none;margin-top:22px;border-top:1px solid #e5e7eb;padding-top:20px}.account-panel.open{display:block}.account-panel h2{font-size:22px;margin:0 0 8px;color:#123d2c}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.success-box{background:#ecf8e7;border:1px solid #c7e8b7;color:#246b19;border-radius:12px;padding:14px;margin:16px 0;line-height:1.5}.twofa-box{margin-top:22px}.twofa-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;padding:16px;border-radius:12px;background:#f3f8ef;border:1px solid #e0ead8}.twofa-head .ico{font-size:28px}.twofa-head h2{margin:0 0 4px;color:#123d2c}.otp-input{font-size:26px;text-align:center;letter-spacing:.36em;font-weight:800}.demo-code{display:inline-flex;background:#fff;border:1px dashed #91bd70;border-radius:999px;padding:7px 12px;margin:8px 0;color:#123d2c;font-weight:800}.privacy{font-size:12px;color:#6b7280;line-height:1.45;margin-top:12px}.pill.orange{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;padding:10px 12px;border-radius:10px}.hidden{display:none}.footer{position:absolute;left:76px;bottom:22px;z-index:2;color:rgba(255,255,255,.72);font-size:12px}.mobile-trust{display:none}
+  @media(max-width:1120px){.hero-layer{grid-template-columns:1fr;padding:160px 30px 42px;gap:34px}.brand-block{left:30px;top:42px}.brand-name{font-size:58px}.brand-label{font-size:13px}.hero-copy{margin-top:0}.hero-subtitle{font-size:28px;margin-bottom:36px}.hero-point{grid-template-columns:58px 1fr}.hero-ico{width:52px;height:52px;font-size:26px}.hero-point strong{font-size:20px}.hero-point span{font-size:15px}.login-panel{justify-self:start}.trust-strip{position:relative;left:auto;bottom:auto;margin:0 30px 34px;min-width:0;flex-wrap:wrap}.footer{position:relative;left:auto;bottom:auto;margin:0 30px 22px}.form-grid{grid-template-columns:1fr}}
+  @media(max-width:640px){.hero-layer{padding:136px 18px 26px}.brand-block{left:18px}.brand-name{font-size:46px}.hero-points{gap:22px}.trust-strip{margin:0 18px 26px;gap:16px}.trust-item:not(:last-child){border-right:0;padding-right:0}.login-panel{padding:26px 22px}.footer{margin-left:18px}}
+</style>
+<div class="login-shell">
+  <div class="brand-block"><div class="brand-name">Follow O-I</div><div class="brand-label">Circular platform</div></div>
+  <div class="hero-layer">
+    <section class="hero-copy">
+      <h1 class="hero-title">Follow O-I</h1>
+      <div class="hero-subtitle">Duurzaam gebruik,<br>circulair hergebruik</div>
+      <div class="hero-points">
+        <div class="hero-point"><div class="hero-ico">⌖</div><div><strong>Volledig inzicht van<br>locatie tot status</strong><span>Realtime overzicht van al uw inventaris op één platform.</span></div></div>
+        <div class="hero-point"><div class="hero-ico">⌁</div><div><strong>Duurzaam en circulair,<br>minder verspillen, meer waarde</strong><span>Verleng de levensduur van producten en draag bij aan een circulaire toekomst.</span></div></div>
+        <div class="hero-point"><div class="hero-ico">□</div><div><strong>Beheer en optimaliseer<br>uw inventaris eenvoudig</strong><span>Efficiënt beheer en slimme inzichten voor maximale controle en besparing.</span></div></div>
+      </div>
+    </section>
+    <section class="login-panel">
+      <h1>{% if show_2fa %}Tweefactorauthenticatie{% else %}Inloggen{% endif %}</h1>
+      <p class="muted">{% if show_2fa %}Voer de 6-cijferige code in van uw authenticator app.{% else %}Welkom terug! Log in om verder te gaan.{% endif %}</p>
+      {% if error %}<p class="pill orange">{{ error }}</p>{% endif %}
+      {% if request_sent %}<div class="success-box"><strong>Accountaanvraag verzonden.</strong><br>Wij hebben uw aanvraag ontvangen en nemen contact met u op voor verdere afstemming.</div>{% endif %}
+      {% if show_2fa %}
+        <div class="twofa-box">
+          <div class="twofa-head"><div class="ico">🛡</div><div><h2>Beveiligingscontrole</h2><p class="muted">De 2FA-stap blijft in hetzelfde inlogscherm. Geen aparte pagina.</p>{% if demo_code %}<span class="demo-code">Demo-code: {{ demo_code }}</span>{% endif %}</div></div>
+          <form method="post" action="{{ url_for('verify_2fa') }}">
+            <div class="form-field"><label>6-cijferige code</label><input class="otp-input" name="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="------" autofocus></div>
+            <div class="row"><label class="check"><input type="checkbox" name="trust_device"> Vertrouw dit apparaat 30 dagen</label><a class="link" href="{{ url_for('login') }}">Opnieuw inloggen</a></div>
+            <button class="btn">Code bevestigen</button>
+          </form>
+        </div>
+      {% else %}
+        <form method="post" action="{{ url_for('login') }}">
+          <div class="form-field"><label>E-mailadres</label><input name="email" autocomplete="email" placeholder="Vul je e-mailadres in"></div>
+          <div class="form-field"><label>Wachtwoord</label><input type="password" name="password" autocomplete="current-password" placeholder="Vul je wachtwoord in"></div>
+          <div class="row"><label class="check"><input type="checkbox" name="remember"> Onthoud mij</label><a class="link" href="#">Wachtwoord vergeten?</a></div>
+          <button class="btn">Inloggen</button>
+        </form>
+        <div class="splitter">of</div>
+        <button type="button" class="btn outline" onclick="document.getElementById('account-panel').classList.toggle('open')">Account aanvragen</button>
+      {% endif %}
+      <div id="account-panel" class="account-panel {% if show_account_request or request_sent %}open{% endif %}">
+        <h2>Account aanvragen</h2>
+        <p class="muted">Vul onderstaande gegevens in. De aanvraag wordt naar ons team verzonden. Wij nemen vervolgens contact op voor verdere afstemming.</p>
+        <form method="post" action="{{ url_for('account_request') }}">
+          <div class="form-grid"><div class="form-field"><label>Voornaam *</label><input name="first_name" required value="{{ request_form.first_name if request_form else '' }}"></div><div class="form-field"><label>Achternaam *</label><input name="last_name" required value="{{ request_form.last_name if request_form else '' }}"></div></div>
+          <div class="form-field"><label>Bedrijfsnaam *</label><input name="company_name" required value="{{ request_form.company_name if request_form else '' }}"></div>
+          <div class="form-field"><label>Functie</label><input name="job_title" value="{{ request_form.job_title if request_form else '' }}"></div>
+          <div class="form-grid"><div class="form-field"><label>E-mailadres *</label><input type="email" name="email" required value="{{ request_form.email if request_form else '' }}"></div><div class="form-field"><label>Telefoonnummer *</label><input name="phone" required value="{{ request_form.phone if request_form else '' }}"></div></div>
+          <div class="form-field"><label>Type organisatie *</label><select name="organisation_type" required><option value="">Kies een optie</option><option>Bedrijf</option><option>Onderwijs</option><option>Overheid</option><option>Zorg</option><option>Interieurpartner</option><option>Anders</option></select></div>
+          <div class="form-field"><label>Bericht / toelichting</label><textarea name="message" placeholder="Waarvoor wilt u Follow O-I gebruiken?">{{ request_form.message if request_form else '' }}</textarea></div>
+          <button class="btn">Aanvraag verzenden</button>
+          <p class="privacy">Uw gegevens worden vertrouwelijk behandeld en uitsluitend gebruikt voor het verwerken van uw accountaanvraag.</p>
+        </form>
+      </div>
+    </section>
+  </div>
+  <div class="trust-strip"><div class="trust-item"><b>♢</b><span>Veilig &<br>betrouwbaar</span></div><div class="trust-item"><b>↻</b><span>100%<br>circulair</span></div><div class="trust-item"><b>▥</b><span>Real time<br>inzicht</span></div></div>
+  <div class="footer">© 2026 Follow O-I | Alle rechten voorbehouden</div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Huidig meubilair{% endblock %}
+{% block content %}
+<div class='card'>
+  <h2>Huidig meubilair</h2>
+  <div class='actions'>
+    <a class="btn" href="{{ url_for('asset_new') }}">Nieuw asset</a>
+    <a class="btn secondary" href="{{ url_for('marketplace') }}">Marketplace</a>
+    <a class="btn secondary" href="{{ url_for('marketplace_new') }}">Product plaatsen</a>
+  </div>
+</div>
+<div class='card'>
+  <table>
+    <tr><th>Foto</th><th>Asset</th><th>Klant</th><th>Categorie</th><th>Locatie</th><th>Conditie</th><th>Uitgeleverd</th><th>Laatste service</th><th>Status</th><th>Marketplace</th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{% if r.photo_path %}<img src="{{ url_for('uploads', filename=r.photo_path) }}" style="width:54px;height:42px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">{% else %}<span class="muted">Geen foto</span>{% endif %}</td>
+      <td><a href="{{ url_for('asset_detail', asset_id=r.id) }}"><strong>{{ r.asset_code }}</strong></a></td>
+      <td>{{ r.client_name }}</td>
+      <td>{{ r.category }}</td>
+      <td>{{ r.location }} {{ r.room }}</td>
+      <td>{{ r.condition_score or '-' }}/5</td>
+      <td>{{ r.purchase_date or '-' }}</td>
+      <td>{{ r.last_service or '-' }}</td>
+      <td>{{ r.status }}</td>
+      <td><a class="btn secondary" href="{{ url_for('asset_marketplace_edit', asset_id=r.id) }}">{{ r.marketplace_status }}</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

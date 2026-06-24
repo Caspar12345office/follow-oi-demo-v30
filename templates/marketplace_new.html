@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Nieuw product plaatsen{% endblock %}
+{% block content %}
+<div class="oi-line"></div>
+<div class="card">
+  <h2>Nieuw product op de circulaire marketplace</h2>
+  <p class="muted">Plaats overtollig meubilair zodat andere facility managers binnen de organisatie dit kunnen reserveren.</p>
+  <form method="post" enctype="multipart/form-data">
+    <div class="form-row">
+      <div><label>Organisatie</label><select name="client_id" required>{% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+      <div><label>Categorie</label><input name="category" required placeholder="Bijv. Bureaustoel, bureau, kast"></div>
+      <div><label>Merk</label><input name="brand"></div>
+      <div><label>Model</label><input name="model"></div>
+      <div><label>Conditie 1-5</label><input name="condition_score" type="number" min="1" max="5" value="4"></div>
+      <div><label>Locatie</label><input name="location" placeholder="Bijv. Arnhem HQ"></div>
+      <div><label>Ruimte</label><input name="room" placeholder="Bijv. 3.12"></div>
+      <div><label>Verdieping</label><input name="floor"></div>
+      <div><label>Beschikbaar vanaf</label><input name="marketplace_available_from" type="date"></div>
+      <div><label>Aanschafdatum</label><input name="purchase_date" type="date"></div>
+      <div><label>Foto product</label><input name="marketplace_photo" type="file" accept="image/*"><small class="muted">Deze foto wordt zichtbaar in de marketplace-advertentie.</small></div>
+    </div>
+    <label>Toelichting</label><textarea name="marketplace_note" rows="5" placeholder="Beschrijf aantallen, staat, bijzonderheden, ophaalinstructies of voorwaarden."></textarea>
+    <div class="actions" style="margin-top:16px"><button class="btn">Plaatsen op marketplace</button><a class="btn secondary" href="{{ url_for('marketplace') }}">Annuleren</a></div>
+  </form>
+</div>
+{% endblock %}

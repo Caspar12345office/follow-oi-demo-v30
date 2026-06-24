@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Schade melden{% endblock %}
+{% block content %}
+<div class="oi-line"></div>
+<div class="card">
+  <h2>Schade melden</h2>
+  <p class="muted">Meld schade snel. Lopende schades staan direct onder het formulier in hetzelfde overzicht.</p>
+  <form method="post" enctype="multipart/form-data">
+    <div class="form-row">
+      <div><label>Klant</label><select name="client_id">{% for c in clients %}<option value="{{ c.id }}" {% if preselect and preselect|string==c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+      <div><label>Meubilair</label><select name="asset_id"><option value="">Geen specifiek meubel</option>{% for a in assets %}<option value="{{ a.id }}">{{ a.asset_code }} · {{ a.category }}</option>{% endfor %}</select></div>
+      <div><label>Contactpersoon</label><input name="contact_name"></div>
+      <div><label>E-mail</label><input name="contact_email"></div>
+      <div><label>Telefoon</label><input name="contact_phone"></div>
+      <div><label>Locatie</label><input name="location"></div>
+      <div><label>Ruimte</label><input name="room"></div>
+      <div><label>Urgentie</label><select name="urgency"><option>Laag</option><option selected>Middel</option><option>Hoog</option></select></div>
+      <div><label>Foto</label><input type="file" name="photo"></div>
+    </div>
+    <label>Omschrijving schade</label><textarea name="description" required rows="4" placeholder="Beschrijf de schade of het serviceverzoek."></textarea>
+    <div class="actions" style="margin-top:16px"><button class="btn">Schade melden</button></div>
+  </form>
+</div>
+
+<div class='card'>
+  <h2>Lopende schades</h2>
+  <p class="muted">Openstaande meldingen die nog opgepakt of afgerond moeten worden.</p>
+  <table>
+    <tr><th>Klant</th><th>Meubilair</th><th>Locatie</th><th>Urgentie</th><th>Status</th><th>Omschrijving</th></tr>
+    {% for r in damages %}
+    <tr>
+      <td>{{ r.client_name }}</td>
+      <td>{{ r.asset_code or '-' }}</td>
+      <td>{{ r.location }} {{ r.room }}</td>
+      <td>{{ r.urgency or '-' }}</td>
+      <td><span class="pill {% if r.status=='opgelost' %}green{% else %}orange{% endif %}">{{ r.status }}</span></td>
+      <td>{{ r.description }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="muted">Er zijn geen lopende schades.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

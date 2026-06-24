@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Circulaire marketplace
+<script>
+document.addEventListener('change', function(e){
+  if(e.target.name === 'transport_option'){
+    var form = e.target.closest('form');
+    var fields = form.querySelector('.office-transport-fields');
+    if(fields){ fields.style.display = e.target.value === 'office_interior' ? 'block' : 'none'; }
+    var button = form.querySelector('.reserve-button');
+    if(button){ button.textContent = e.target.value === 'office_interior' ? 'Reserveren en prijsaanvraag verzenden' : 'Reserveren'; }
+  }
+});
+</script>
+{% endblock %}
+{% block content %}
+<div class="oi-line"></div>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
+    <div>
+      <h2>Beschikbaar meubilair binnen de organisatie</h2>
+      <p class="muted">Facility managers zien hier welk meubilair over is en beschikbaar is voor interne herplaatsing.</p>
+    </div>
+    <a class="btn" href="{{ url_for('marketplace_new') }}">Nieuw product plaatsen</a>
+  </div>
+  <form class="form-row" method="get">
+    <div><label>Zoeken</label><input name="q" value="{{ q }}" placeholder="Asset, categorie, merk, locatie of ruimte"></div>
+    <div><label>Klant / organisatie</label><select name="client_id"><option value="">Alle organisaties</option>{% for c in clients %}<option value="{{ c.id }}" {% if selected_client_id|string==c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div><label>Status</label><select name="status"><option value="" {% if not selected_status %}selected{% endif %}>Alles</option><option value="beschikbaar" {% if selected_status=='beschikbaar' %}selected{% endif %}>Beschikbaar</option><option value="gereserveerd" {% if selected_status=='gereserveerd' %}selected{% endif %}>Gereserveerd</option></select></div>
+    <div style="align-self:end"><button class="btn secondary">Filteren</button></div>
+  </form>
+</div>
+{% if request.args.get('price_request') == 'verzonden' %}
+<div class="card" style="border-left:5px solid #22c55e">
+  <strong>Transportprijsaanvraag verzonden</strong>
+  <p class="muted" style="margin:6px 0 0">De aanvraag is naar Follow O-I verzonden. Wij beoordelen de ophaal- en loslocatie, toegankelijkheid en parkeersituatie en beantwoorden de aanvraag per e-mail met een prijsopgave. Het transport is nog niet ingepland.</p>
+</div>
+{% endif %}
+{% for a in rows %}
+<div class="card market-card">
+  {% if a.photo_path %}
+  <div style="width:150px;min-width:150px">
+    <img src="{{ url_for('uploads', filename=a.photo_path) }}" alt="{{ a.category }}" style="width:150px;height:110px;object-fit:cover;border-radius:14px;border:1px solid #e5e7eb;background:#f3f4f6;">
+  </div>
+  {% endif %}
+  <div>
+    <div class="asset-title">{{ a.category }}{% if a.brand %} · {{ a.brand }}{% endif %}{% if a.model %} {{ a.model }}{% endif %}</div>
+    <p class="muted">{{ a.client_name }} · {{ a.location }} · {{ a.room }} · {{ a.asset_code }}</p>
+    <p>{{ a.marketplace_note or 'Geen toelichting toegevoegd.' }}</p>
+    <div class="actions"><span class="pill {% if a.marketplace_status=='beschikbaar' %}green{% else %}orange{% endif %}">{{ a.marketplace_status }}</span><span class="pill">Conditie {{ a.condition_score }}/5</span>{% if a.marketplace_available_from %}<span class="pill">Vanaf {{ a.marketplace_available_from }}</span>{% endif %}{% if a.reserved_by_name %}<span class="pill orange">Gereserveerd door {{ a.reserved_by_name }}</span>{% endif %}</div>
+  </div>
+  <div class="actions" style="align-content:start;justify-content:end">
+    {% if a.marketplace_status=='beschikbaar' %}
+    <form method="post" action="{{ url_for('marketplace_reserve', asset_id=a.id) }}" class="card" style="padding:14px;margin:0;min-width:320px;box-shadow:none">
+      <strong>Reserveren en vervoer kiezen</strong>
+      <p class="muted" style="margin:6px 0 10px">Kies hoe dit item van locatie naar locatie gaat.</p>
+      <label style="font-weight:600"><input type="radio" name="transport_option" value="onderling_afstemmen" checked style="width:auto"> Onderling afstemmen</label>
+      <small class="muted" style="display:block;margin:-4px 0 8px 22px">Aanbieder en afnemer stemmen het vervoer zelf onderling af.</small>
+      <label style="font-weight:600"><input type="radio" name="transport_option" value="ophalen" style="width:auto"> Ophalen</label>
+      <small class="muted" style="display:block;margin:-4px 0 8px 22px">De afnemer haalt het item zelf op bij de aanbieder.</small>
+      <label style="font-weight:600"><input type="radio" name="transport_option" value="office_interior" style="width:auto"> Transportprijs aanvragen bij Follow O-I</label>
+      <small class="muted" style="display:block;margin:-4px 0 8px 22px">Dit is een prijsaanvraag, geen directe transportboeking.</small>
+      <div class="office-transport-fields" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:10px">
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px;margin-bottom:10px">
+          <strong>Prijsaanvraag verzenden</strong>
+          <p class="muted" style="margin:6px 0 0">Verzend een transportprijsaanvraag naar Follow O-I. Wij beoordelen de ophaal- en loslocatie, bereikbaarheid en toegankelijkheid en beantwoorden de aanvraag per e-mail met een prijsopgave. Het transport wordt pas ingepland na akkoord op de offerte.</p>
+        </div>
+        <label>Aanvragende organisatie</label>
+        <select name="request_client_id">
+          {% for c in clients %}<option value="{{ c.id }}" {% if c.id==a.client_id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        </select>
+
+        <h4 style="margin:14px 0 6px">Contact voor prijsopgave</h4>
+        <label>Contactpersoon</label>
+        <input name="transport_contact_name" placeholder="Naam">
+        <label>E-mail voor offerte</label>
+        <input name="transport_contact_email" type="email" placeholder="naam@organisatie.nl">
+        <label>Telefoon</label>
+        <input name="transport_contact_phone" placeholder="Telefoonnummer">
+
+        <h4 style="margin:14px 0 6px">Ophaallocatie</h4>
+        <label>Adres / locatie</label>
+        <input name="transport_from" value="{{ a.location }} {{ a.room }}" placeholder="Adres, gebouw, ruimte">
+        <label>Toegankelijkheid ophaallocatie</label>
+        <select name="pickup_floor_type">
+          <option value="Begane grond">Begane grond</option>
+          <option value="Verdieping">Verdieping</option>
+        </select>
+        <label>Verdieping ophaallocatie</label>
+        <input name="pickup_floor_number" placeholder="Bijv. 1e verdieping, 3e verdieping of n.v.t.">
+        <label>Lift aanwezig bij ophaallocatie?</label>
+        <select name="pickup_lift">
+          <option value="Onbekend">Onbekend / niet van toepassing</option>
+          <option value="Ja">Ja</option>
+          <option value="Nee">Nee</option>
+        </select>
+        <label>Parkeren bij ophaallocatie</label>
+        <select name="pickup_parking">
+          <option value="Onbekend">Onbekend</option>
+          <option value="Ja, direct voor de deur">Ja, direct voor de deur</option>
+          <option value="Ja, op korte loopafstand">Ja, op korte loopafstand</option>
+          <option value="Nee / lastig parkeren">Nee / lastig parkeren</option>
+        </select>
+        <label>Toelichting ophaallocatie</label>
+        <textarea name="pickup_note" rows="2" placeholder="Bijv. laadperron, smalle gangen, tijdvenster, toegangspas"></textarea>
+
+        <h4 style="margin:14px 0 6px">Loslocatie</h4>
+        <label>Adres / locatie</label>
+        <input name="transport_to" placeholder="Adres, gebouw, ruimte">
+        <label>Toegankelijkheid loslocatie</label>
+        <select name="delivery_floor_type">
+          <option value="Begane grond">Begane grond</option>
+          <option value="Verdieping">Verdieping</option>
+        </select>
+        <label>Verdieping loslocatie</label>
+        <input name="delivery_floor_number" placeholder="Bijv. 1e verdieping, 3e verdieping of n.v.t.">
+        <label>Lift aanwezig bij loslocatie?</label>
+        <select name="delivery_lift">
+          <option value="Onbekend">Onbekend / niet van toepassing</option>
+          <option value="Ja">Ja</option>
+          <option value="Nee">Nee</option>
+        </select>
+        <label>Parkeren bij loslocatie</label>
+        <select name="delivery_parking">
+          <option value="Onbekend">Onbekend</option>
+          <option value="Ja, direct voor de deur">Ja, direct voor de deur</option>
+          <option value="Ja, op korte loopafstand">Ja, op korte loopafstand</option>
+          <option value="Nee / lastig parkeren">Nee / lastig parkeren</option>
+        </select>
+        <label>Toelichting loslocatie</label>
+        <textarea name="delivery_note" rows="2" placeholder="Bijv. laadperron, smalle gangen, tijdvenster, toegangspas"></textarea>
+
+        <label>Extra opmerkingen voor prijsaanvraag</label>
+        <textarea name="transport_note" rows="3" placeholder="Bijv. gewenste datum, aantallen, demontage, bijzonderheden"></textarea>
+      </div>
+      <button class="btn success reserve-button" style="margin-top:10px">Reserveren</button>
+    </form>
+    {% endif %}
+    {% if has_perm('edit_assets') %}<a class="btn secondary" href="{{ url_for('asset_marketplace_edit', asset_id=a.id) }}">Beheren</a>{% if a.marketplace_status=='gereserveerd' %}<form method="post" action="{{ url_for('marketplace_release', asset_id=a.id) }}"><button class="btn secondary">Vrijgeven</button></form>{% endif %}{% endif %}
+  </div>
+</div>
+{% else %}<div class="card"><p class="muted">Geen marketplace-items gevonden. Plaats een nieuw product via de knop hierboven of maak een bestaande asset beschikbaar via Huidig meubilair.</p></div>{% endfor %}
+
+<script>
+document.addEventListener('change', function(e){
+  if(e.target.name === 'transport_option'){
+    var form = e.target.closest('form');
+    var fields = form.querySelector('.office-transport-fields');
+    if(fields){ fields.style.display = e.target.value === 'office_interior' ? 'block' : 'none'; }
+    var button = form.querySelector('.reserve-button');
+    if(button){ button.textContent = e.target.value === 'office_interior' ? 'Reserveren en prijsaanvraag verzenden' : 'Reserveren'; }
+  }
+});
+</script>
+{% endblock %}
