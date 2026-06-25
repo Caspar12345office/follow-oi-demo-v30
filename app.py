@@ -214,6 +214,37 @@ DELIVERY_OPTIONS = [
 ]
 DELIVERY_OPTION_KEYS = [k for k, _, _ in DELIVERY_OPTIONS]
 
+# Snelle acties op het dashboard. De klant kiest zelf welke worden getoond (zie resolve_quick_actions).
+QUICK_ACTIONS = [
+    {"key": "offerte", "title": "Offerte aanvragen", "desc": "stel zelf uw aanvraag samen", "endpoint": "quote_cart", "icon": "+", "ic_bg": "var(--soft)", "ic_fg": "var(--accent)", "perm": "edit_orders"},
+    {"key": "verplaatsen", "title": "Meubilair verplaatsen", "desc": "verplaats binnen locaties", "endpoint": "asset_moves", "icon": "⇄", "ic_bg": "var(--soft)", "ic_fg": "var(--accent)", "perm": "edit_assets"},
+    {"key": "schade", "title": "Schade melden", "desc": "reparatie of vervanging", "endpoint": "ticket_new", "icon": "!", "ic_bg": "#fbf1e0", "ic_fg": "var(--accent2)", "perm": None},
+    {"key": "plaatsen", "title": "Product plaatsen", "desc": "aanbieden op de handelsomgeving", "endpoint": "marketplace", "icon": "↑", "ic_bg": "#e9f5e0", "ic_fg": "var(--success)", "perm": "view_marketplace"},
+    {"key": "meubilair", "title": "Mijn meubilair", "desc": "bekijk uw inventaris", "endpoint": "assets", "icon": "▦", "ic_bg": "var(--soft)", "ic_fg": "var(--accent)", "perm": "view_assets"},
+    {"key": "documenten", "title": "Documenten", "desc": "contracten en rapportages", "endpoint": "documents", "icon": "▤", "ic_bg": "var(--soft)", "ic_fg": "var(--accent)", "perm": "view_documents"},
+    {"key": "handelsomgeving", "title": "Circulaire handelsomgeving", "desc": "beschikbaar meubilair binnen de organisatie", "endpoint": "marketplace", "icon": "♻", "ic_bg": "#e9f5e0", "ic_fg": "var(--success)", "perm": "view_marketplace"},
+    {"key": "ticket", "title": "Ticket aanmaken", "desc": "stel een vraag of meld iets", "endpoint": "ticket_new", "icon": "✉", "ic_bg": "#fbf1e0", "ic_fg": "var(--accent2)", "perm": None},
+    {"key": "offerteoverzicht", "title": "Offerteoverzicht", "desc": "status van uw offertes", "endpoint": "orders", "icon": "≡", "ic_bg": "var(--soft)", "ic_fg": "var(--accent)", "perm": "view_orders"},
+    {"key": "impact", "title": "Impact", "desc": "CO₂ en kostenbesparing", "endpoint": "impact", "icon": "◑", "ic_bg": "#e9f5e0", "ic_fg": "var(--success)", "perm": "view_impact"},
+]
+QUICK_ACTIONS_BY_KEY = {a["key"]: a for a in QUICK_ACTIONS}
+DEFAULT_QUICK_ACTION_KEYS = ["offerte", "verplaatsen", "schade", "plaatsen"]
+
+def resolve_quick_actions(user):
+    raw = None
+    if user is not None and "dashboard_actions" in user.keys():
+        raw = user["dashboard_actions"]
+    keys = [k.strip() for k in raw.split(",") if k.strip()] if raw else list(DEFAULT_QUICK_ACTION_KEYS)
+    out = []
+    for k in keys:
+        a = QUICK_ACTIONS_BY_KEY.get(k)
+        if not a:
+            continue
+        if a["perm"] and not has_perm(a["perm"]):
+            continue
+        out.append(a)
+    return out
+
 
 # Benaderende coördinaten van NL-plaatsen om asset-locaties als stip op de kaart te tonen.
 NL_CITY_COORDS = {
@@ -612,7 +643,8 @@ def init_db():
         "ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE users ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE users ADD COLUMN locked_until TEXT",
-        "ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'nl'"
+        "ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'nl'",
+        "ALTER TABLE users ADD COLUMN dashboard_actions TEXT"
     ]:
         try: c.execute(sql)
         except Exception: pass
@@ -1204,9 +1236,22 @@ def dashboard():
     location_count = conn.execute("SELECT COUNT(DISTINCT location) c FROM assets WHERE location IS NOT NULL AND location!=''").fetchone()["c"]
     map_points, map_unmatched = build_map_points(conn)
     conn.close()
+    quick_actions = resolve_quick_actions(current_user())
     return render_template("dashboard.html", stats=stats, recent=recent, category_summary=category_summary,
                            location_count=location_count, map_points=map_points, map_unmatched=map_unmatched,
-                           savings_series=savings_series)
+                           savings_series=savings_series, quick_actions=quick_actions,
+                           all_quick_actions=QUICK_ACTIONS, selected_action_keys=[a["key"] for a in quick_actions])
+
+@app.route("/dashboard/snelle-acties", methods=["POST"])
+def quick_actions_save():
+    if not require_login():
+        return redirect(url_for("login"))
+    selected = [k for k in request.form.getlist("actions") if k in QUICK_ACTIONS_BY_KEY]
+    conn = db()
+    conn.execute("UPDATE users SET dashboard_actions=? WHERE id=?", (",".join(selected), session.get("user_id")))
+    conn.commit(); conn.close()
+    flash("Snelle acties bijgewerkt.")
+    return redirect(url_for("dashboard"))
 
 @app.route("/clients")
 def clients():

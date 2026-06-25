@@ -24,7 +24,18 @@
   .impact-row .it{flex:1;min-width:120px}
   .impact-row .v{font-size:22px;font-weight:800}
   .impact-row .l{color:var(--muted);font-size:12px}
+  .qa-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 12px}
+  .qa-head h2{margin:0}
+  .qa-edit{display:none;margin-top:14px}
+  .qa-edit.show{display:block}
+  .qa-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .qa-opt{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+  .qa-opt:hover{border-color:var(--accent)}
+  .qa-opt input{width:auto;margin-top:3px}
+  .qa-opt .t{font-weight:700;display:block}
+  .qa-opt .d{color:var(--muted);font-size:13px;display:block}
   @media(max-width:1100px){.dash-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:700px){.qa-grid{grid-template-columns:1fr}}
   @media(max-width:900px){.dash-2,.dash-3,.dash-4{grid-template-columns:1fr}}
 </style>
 
@@ -57,24 +68,37 @@
   </div>
 
   <div>
-    <h2 style="margin:4px 0 12px">Snelle acties</h2>
+    <div class="qa-head">
+      <h2>Snelle acties</h2>
+      <button type="button" class="btn secondary" style="padding:8px 14px;font-size:13px" onclick="document.getElementById('qa-edit').classList.toggle('show')">Aanpassen</button>
+    </div>
     <div class="dash-4">
-      <a class="card qa" href="{{ url_for('quote_cart') }}">
-        <div class="ic" style="background:var(--soft);color:var(--accent)">+</div>
-        <div><div class="t">Offerte aanvragen</div><div class="d">stel zelf uw mandje samen</div></div>
+      {% for a in quick_actions %}
+      <a class="card qa" href="{{ url_for(a.endpoint) }}">
+        <div class="ic" style="background:{{ a.ic_bg }};color:{{ a.ic_fg }}">{{ a.icon }}</div>
+        <div><div class="t">{{ a.title }}</div><div class="d">{{ a.desc }}</div></div>
       </a>
-      <a class="card qa" href="{{ url_for('asset_moves') }}">
-        <div class="ic" style="background:var(--soft);color:var(--accent)">⇄</div>
-        <div><div class="t">Meubilair verplaatsen</div><div class="d">verplaats binnen locaties</div></div>
-      </a>
-      <a class="card qa" href="{{ url_for('ticket_new') }}">
-        <div class="ic" style="background:#fbf1e0;color:var(--accent2)">!</div>
-        <div><div class="t">Schade melden</div><div class="d">reparatie of vervanging</div></div>
-      </a>
-      <a class="card qa" href="{{ url_for('marketplace') }}">
-        <div class="ic" style="background:#e9f5e0;color:var(--success)">↑</div>
-        <div><div class="t">Product plaatsen</div><div class="d">aanbieden op de handelsomgeving</div></div>
-      </a>
+      {% else %}
+      <p class="muted">Nog geen snelle acties gekozen. Klik op “Aanpassen” om er toe te voegen.</p>
+      {% endfor %}
+    </div>
+    <div id="qa-edit" class="card qa-edit">
+      <h2 style="margin-bottom:4px">Snelle acties aanpassen</h2>
+      <p class="muted" style="margin:0 0 14px">Kies zelf welke snelle acties op uw dashboard verschijnen.</p>
+      <form method="post" action="{{ url_for('quick_actions_save') }}">
+        <div class="qa-grid">
+          {% for a in all_quick_actions %}
+          <label class="qa-opt">
+            <input type="checkbox" name="actions" value="{{ a.key }}" {% if a.key in selected_action_keys %}checked{% endif %}>
+            <span><span class="t">{{ a.title }}</span><span class="d">{{ a.desc }}</span></span>
+          </label>
+          {% endfor %}
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn">Opslaan</button>
+          <button type="button" class="btn secondary" onclick="document.getElementById('qa-edit').classList.remove('show')">Annuleren</button>
+        </div>
+      </form>
     </div>
   </div>
 
