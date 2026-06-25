@@ -1135,6 +1135,30 @@ def apply_language_translation(response):
         pass
     return response
 
+@app.route("/verkoop")
+def sales():
+    return render_template("sales.html")
+
+@app.route("/verkoop/oplossing")
+def sales_oplossing():
+    return render_template("sales_oplossing.html")
+
+@app.route("/verkoop/duurzaamheid")
+def sales_duurzaamheid():
+    return render_template("sales_duurzaamheid.html")
+
+@app.route("/verkoop/prijzen")
+def sales_prijzen():
+    return render_template("sales_prijzen.html")
+
+@app.route("/verkoop/contact")
+def sales_contact():
+    return render_template("sales_contact.html")
+
+@app.route("/handleiding")
+def handleiding():
+    return render_template("handleiding.html")
+
 @app.route("/login", methods=["GET","POST"])
 def login():
     error = ""

@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gebruikershandleiding · Follow O-I</title>
+<style>
+  @font-face{font-family:'Jost';font-style:normal;font-weight:100 900;font-display:swap;src:url("{{ url_for('static', filename='fonts/jost-latin.woff2') }}") format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+  :root{--accent:#0f3d3e;--accent2:#15595a;--gold:#b88a44;--bg:#f6f3ee;--ink:#1c1a16;--muted:#6f6a5f;--soft:#eef3ec;--green:#78b743;--line:#e7e1d6;--panel:#fff}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:'Jost',Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  .eyebrow{display:inline-block;font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;font-weight:600;color:var(--gold)}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer}
+  .btn.gold{background:var(--gold);color:#fff}
+  .btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+  .btn.dark-ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line)}
+
+  /* top bar */
+  .nav{position:sticky;top:0;z-index:60;background:rgba(246,243,238,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px;gap:16px}
+  .logo{font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-size:18px}
+  .logo small{display:block;font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:400;text-transform:none;margin-top:-2px}
+
+  /* hero */
+  .hero{background:linear-gradient(135deg,#0f3d3e 0%,#15595a 60%,#0d3334 100%);color:#fff;padding:60px 0 70px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;right:-140px;top:-120px;width:440px;height:440px;border-radius:50%;border:56px solid rgba(255,255,255,.04)}
+  .hero .eyebrow{color:#d9c6a3}
+  .hero h1{font-size:40px;margin:12px 0 10px;letter-spacing:-.02em}
+  .hero p{font-size:18px;color:#d6e7df;max-width:680px;margin:0}
+  .gold-rule{width:64px;height:5px;border-radius:3px;background:var(--gold);margin:18px 0}
+
+  /* doc layout */
+  .doc{display:grid;grid-template-columns:264px minmax(0,1fr);gap:44px;padding:54px 0 80px;align-items:start}
+  .toc{position:sticky;top:84px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;max-height:calc(100vh - 110px);overflow:auto}
+  .toc h4{margin:6px 8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .toc a{display:block;padding:8px 12px;border-radius:10px;color:var(--muted);font-size:14.5px}
+  .toc a:hover{background:var(--soft);color:var(--accent)}
+  .toc .grp{margin-top:12px}
+
+  .content{min-width:0}
+  .intro{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin-bottom:34px}
+  .intro p{margin:0;color:var(--muted);font-size:15.5px}
+  .intro p+p{margin-top:10px}
+
+  .sec{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px 30px 26px;margin-bottom:24px;scroll-margin-top:84px}
+  .sec .sec-ic{width:46px;height:46px;border-radius:13px;background:var(--soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;margin-bottom:14px}
+  .sec h2{font-size:24px;color:var(--accent);margin:0 0 8px;letter-spacing:-.01em}
+  .sec .desc{color:var(--muted);font-size:15.5px;margin:0 0 18px}
+  .sec h3{font-size:16px;color:var(--ink);margin:22px 0 10px}
+  ol.steps{counter-reset:s;list-style:none;margin:0;padding:0;display:grid;gap:12px}
+  ol.steps li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:14px;align-items:start;font-size:15.5px}
+  ol.steps li:before{content:counter(s);width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .tip{display:flex;gap:12px;background:var(--soft);border-radius:12px;padding:14px 16px;margin-top:18px;font-size:14.5px}
+  .tip b{color:var(--accent)}
+  .tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);background:#fbf3e6;border-radius:999px;padding:3px 10px;margin-left:8px;vertical-align:middle}
+  .path{display:inline-block;background:var(--soft);color:var(--accent);border-radius:8px;padding:2px 8px;font-weight:600;font-size:14px}
+
+  /* help cta */
+  .help{background:linear-gradient(135deg,#0f3d3e,#15595a);color:#fff;border-radius:20px;padding:34px;text-align:center;margin-top:10px}
+  .help h2{font-size:26px;margin:0 0 8px}
+  .help p{color:#d6e7df;margin:0 0 20px}
+  .help a{color:#fff;font-weight:600;text-decoration:underline}
+  .help .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+
+  footer{background:#0b2a2b;color:#9fc2b1;padding:30px 0;font-size:13.5px;margin-top:50px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+  @media(max-width:980px){
+    .doc{grid-template-columns:1fr;gap:24px}
+    .toc{position:relative;top:0;max-height:none}
+    .hero h1{font-size:30px}
+  }
+</style>
+</head>
+<body>
+
+  <header class="nav">
+    <div class="wrap">
+      <a class="logo" href="{{ url_for('dashboard') }}">Follow O-I<small>Gebruikershandleiding</small></a>
+      <a class="btn dark-ghost" href="{{ url_for('dashboard') }}">← Terug naar de portal</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Gebruikershandleiding</span>
+      <h1>Alles uit Follow O-I halen, stap voor stap.</h1>
+      <div class="gold-rule"></div>
+      <p>Deze handleiding legt elke functie van de portal rustig uit. Zoek de functie die u nodig heeft in het menu links en volg de stappen. Komt u er niet uit? Onderaan vindt u onze contactgegevens.</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="doc">
+
+      <!-- TOC -->
+      <aside class="toc">
+        <h4>Inhoud</h4>
+        <a href="#inloggen">Inloggen &amp; beveiliging</a>
+        <a href="#dashboard">Dashboard &amp; snelle acties</a>
+        <a href="#klanten">Klanten</a>
+        <div class="grp"><h4>Meubilair</h4></div>
+        <a href="#meubilair">Huidig meubilair</a>
+        <a href="#verplaatsen">Meubilair verplaatsen</a>
+        <a href="#handelsomgeving">Circulaire handelsomgeving</a>
+        <a href="#catalogus">Productcatalogus</a>
+        <div class="grp"><h4>Offertes</h4></div>
+        <a href="#offerte">Offerte samenstellen</a>
+        <a href="#offerteoverzicht">Offerteoverzicht</a>
+        <div class="grp"><h4>Tickets</h4></div>
+        <a href="#ticket">Ticket aanmaken</a>
+        <a href="#tickets">Ticketoverzicht</a>
+        <a href="#schade">Schade melden</a>
+        <div class="grp"><h4>Meer</h4></div>
+        <a href="#documenten">Documenten</a>
+        <a href="#impact">Impact</a>
+        <a href="#rfid">RFID</a>
+        <a href="#emvi">EMVI</a>
+        <a href="#instellingen">Instellingen</a>
+        <a href="#uitloggen">Uitloggen</a>
+      </aside>
+
+      <!-- CONTENT -->
+      <main class="content">
+
+        <div class="intro">
+          <p>Welkom bij Follow O-I. In deze portal beheert u uw volledige meubilair, biedt u overschot circulair aan, vraagt u offertes aan en houdt u uw duurzame impact bij.</p>
+          <p>U navigeert via het menu aan de linkerkant van de portal. Onderdelen met een pijltje (zoals Meubilair, Offertes en Tickets) klapt u open door erop te klikken. Welke onderdelen u ziet, hangt af van de rechten die u heeft gekregen.</p>
+        </div>
+
+        <!-- INLOGGEN -->
+        <section id="inloggen" class="sec">
+          <div class="sec-ic">🔑</div>
+          <h2>Inloggen &amp; beveiliging</h2>
+          <p class="desc">Zo komt u veilig in uw eigen omgeving.</p>
+          <h3>Inloggen</h3>
+          <ol class="steps">
+            <li>Ga naar de inlogpagina van Follow O-I.</li>
+            <li>Vul uw e-mailadres en wachtwoord in.</li>
+            <li>Vink <b>Ingelogd blijven</b> aan als u op uw eigen apparaat werkt.</li>
+            <li>Klik op <b>Inloggen</b>. U komt direct op uw dashboard.</li>
+          </ol>
+          <h3>Tweestapsverificatie <span class="tag">indien ingesteld</span></h3>
+          <ol class="steps">
+            <li>Na het inloggen vraagt de portal om een verificatiecode.</li>
+            <li>Vul de code in die u ontvangt.</li>
+            <li>Vink <b>Vertrouw dit apparaat</b> aan om niet telkens opnieuw een code te hoeven invoeren.</li>
+          </ol>
+          <div class="tip"><span>💡</span><div><b>Wachtwoord vergeten?</b> Klik op de inlogpagina op “Wachtwoord vergeten” of neem contact met ons op.</div></div>
+        </section>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="sec">
+          <div class="sec-ic">▤</div>
+          <h2>Dashboard &amp; snelle acties</h2>
+          <p class="desc">Uw startscherm met overzicht, uw vaste aanspreekpunt en knoppen naar veelgebruikte functies.</p>
+          <h3>Snelle acties aanpassen</h3>
+          <ol class="steps">
+            <li>Klik op het dashboard rechtsboven het kopje “Snelle acties” op <b>Aanpassen</b>.</li>
+            <li>Er verschijnt een lijst met alle beschikbare acties.</li>
+            <li>Vink de acties aan die u op uw dashboard wilt zien en haal het vinkje weg bij de acties die u niet gebruikt.</li>
+            <li>Klik op <b>Opslaan</b>. Uw dashboard toont voortaan precies de knoppen die u koos.</li>
+          </ol>
+          <div class="tip"><span>💡</span><div>Wilt u bijvoorbeeld <b>Documenten</b> als snelle actie? Vink die simpelweg aan en sla op. U kunt dit op elk moment weer wijzigen.</div></div>
+        </section>
+
+        <!-- KLANTEN -->
+        <section id="klanten" class="sec">
+          <div class="sec-ic">👥</div>
+          <h2>Klanten</h2>
+          <p class="desc">Het overzicht van organisaties of locaties waarvoor u meubilair beheert.</p>
+          <ol class="steps">
+            <li>Klik in het menu op <span class="path">Klanten</span>.</li>
+            <li>U ziet een lijst met alle klanten en hun gegevens.</li>
+            <li>Klik op een klant om de details en het bijbehorende meubilair te bekijken.</li>
+            <li>Gebruik de knop om een nieuwe klant toe te voegen wanneer u daar rechten voor heeft.</li>
+          </ol>
+        </section>
+
+        <!-- MEUBILAIR -->
+        <section id="meubilair" class="sec">
+          <div class="sec-ic">▦</div>
+          <h2>Huidig meubilair</h2>
+          <p class="desc">Uw complete inventaris: wat u heeft, waar het staat en in welke staat het is.</p>
+          <ol class="steps">
+            <li>Open in het menu <b>Meubilair</b> en klik op <span class="path">Huidig meubilair</span>.</li>
+            <li>U ziet al uw meubelstukken met code, categorie, locatie en status.</li>
+            <li>Gebruik het zoekveld of de filters om snel een specifiek stuk of een locatie te vinden.</li>
+            <li>Klik op een meubelstuk om alle details te zien, zoals conditie, ruimte en geschiedenis.</li>
+          </ol>
+        </section>
+
+        <!-- VERPLAATSEN -->
+        <section id="verplaatsen" class="sec">
+          <div class="sec-ic">⇄</div>
+          <h2>Meubilair verplaatsen</h2>
+          <p class="desc">Verplaats een meubelstuk naar een andere ruimte of locatie, zodat het overzicht klopt.</p>
+          <ol class="steps">
+            <li>Open <b>Meubilair</b> en klik op <span class="path">Verplaats meubilair</span>.</li>
+            <li>Selecteer het meubelstuk dat u wilt verplaatsen.</li>
+            <li>Kies de nieuwe locatie en ruimte.</li>
+            <li>Bevestig de verplaatsing. De wijziging is direct zichtbaar in uw inventaris.</li>
+          </ol>
+        </section>
+
+        <!-- HANDELSOMGEVING -->
+        <section id="handelsomgeving" class="sec">
+          <div class="sec-ic">♻</div>
+          <h2>Circulaire handelsomgeving</h2>
+          <p class="desc">Bied meubilair dat u over heeft aan binnen de organisatie, zodat het hergebruikt kan worden.</p>
+          <h3>Meubilair aanbieden</h3>
+          <ol class="steps">
+            <li>Open <b>Meubilair</b> en klik op <span class="path">Circulaire handelsomgeving</span>.</li>
+            <li>Klik op de knop om een product aan te bieden.</li>
+            <li>Kies het meubelstuk en vul eventueel een toelichting en vervoersoptie in.</li>
+            <li>Plaats het aanbod. Het wordt nu zichtbaar voor anderen binnen de organisatie.</li>
+          </ol>
+          <h3>Beschikbaar meubilair overnemen</h3>
+          <ol class="steps">
+            <li>Bekijk het aanbod in de handelsomgeving.</li>
+            <li>Klik op een meubelstuk voor de details.</li>
+            <li>Geef aan dat u het wilt overnemen en kies hoe het bij u wordt geleverd.</li>
+          </ol>
+          <div class="tip"><span>💡</span><div>Elk stuk dat u hier herplaatst, telt mee in uw duurzame resultaten onder <b>Impact</b>.</div></div>
+        </section>
+
+        <!-- CATALOGUS -->
+        <section id="catalogus" class="sec">
+          <div class="sec-ic">▥</div>
+          <h2>Productcatalogus</h2>
+          <p class="desc">Een overzicht van producten die u kunt bestellen of aan een offerte toevoegen.</p>
+          <ol class="steps">
+            <li>Open <b>Meubilair</b> en klik op <span class="path">Productcatalogus</span>.</li>
+            <li>Blader door de producten of zoek op naam of categorie.</li>
+            <li>Klik op een product voor meer informatie.</li>
+            <li>Voeg een product toe aan uw offerte met de daarvoor bestemde knop.</li>
+          </ol>
+        </section>
+
+        <!-- OFFERTE -->
+        <section id="offerte" class="sec">
+          <div class="sec-ic">+</div>
+          <h2>Offerte samenstellen</h2>
+          <p class="desc">Stel zelf uw aanvraag samen en stuur deze in één keer naar ons door.</p>
+          <ol class="steps">
+            <li>Voeg producten toe aan uw offerte vanuit de catalogus of de handelsomgeving.</li>
+            <li>Open <b>Offertes</b> en klik op <span class="path">Mijn offerte</span>.</li>
+            <li>Controleer de items en pas zo nodig de aantallen aan.</li>
+            <li>Vul uw gegevens en eventuele opmerkingen in.</li>
+            <li>Verstuur de aanvraag. Wij nemen deze in behandeling en nemen contact met u op.</li>
+          </ol>
+        </section>
+
+        <!-- OFFERTEOVERZICHT -->
+        <section id="offerteoverzicht" class="sec">
+          <div class="sec-ic">≡</div>
+          <h2>Offerteoverzicht</h2>
+          <p class="desc">Volg de status van al uw aanvragen op één plek.</p>
+          <ol class="steps">
+            <li>Open <b>Offertes</b> en klik op <span class="path">Offerteoverzicht</span>.</li>
+            <li>U ziet al uw offertes met hun actuele status.</li>
+            <li>Klik op een offerte om de details te bekijken.</li>
+          </ol>
+        </section>
+
+        <!-- TICKET -->
+        <section id="ticket" class="sec">
+          <div class="sec-ic">✉</div>
+          <h2>Ticket aanmaken</h2>
+          <p class="desc">Stel een vraag of meld iets. Wij pakken het op en u kunt het volgen.</p>
+          <ol class="steps">
+            <li>Open <b>Tickets</b> en klik op <span class="path">Ticket aanmaken</span>.</li>
+            <li>Geef een duidelijke titel en omschrijving op.</li>
+            <li>Voeg eventueel een bijlage toe, zoals een foto.</li>
+            <li>Verstuur het ticket. U ontvangt bericht zodra er een reactie is.</li>
+          </ol>
+        </section>
+
+        <!-- TICKETS -->
+        <section id="tickets" class="sec">
+          <div class="sec-ic">🗂</div>
+          <h2>Ticketoverzicht</h2>
+          <p class="desc">Alle vragen en meldingen die u heeft ingediend.</p>
+          <ol class="steps">
+            <li>Open <b>Tickets</b> en klik op <span class="path">Ticketoverzicht</span>.</li>
+            <li>Bekijk de status van uw tickets.</li>
+            <li>Klik op een ticket om het gesprek en de details te lezen of te reageren.</li>
+          </ol>
+        </section>
+
+        <!-- SCHADE -->
+        <section id="schade" class="sec">
+          <div class="sec-ic">!</div>
+          <h2>Schade melden</h2>
+          <p class="desc">Meld schade aan een meubelstuk zodat reparatie of vervanging in gang gezet kan worden.</p>
+          <ol class="steps">
+            <li>Open <b>Tickets</b> en klik op <span class="path">Schade melden</span>.</li>
+            <li>Kies het betreffende meubelstuk.</li>
+            <li>Omschrijf de schade en voeg indien mogelijk een foto toe.</li>
+            <li>Verstuur de melding. Wij beoordelen reparatie of vervanging.</li>
+          </ol>
+        </section>
+
+        <!-- DOCUMENTEN -->
+        <section id="documenten" class="sec">
+          <div class="sec-ic">▤</div>
+          <h2>Documenten</h2>
+          <p class="desc">Contracten, garanties en rapportages overzichtelijk bij elkaar.</p>
+          <ol class="steps">
+            <li>Klik in het menu op <span class="path">Documenten</span>.</li>
+            <li>Bekijk de beschikbare documenten in de lijst.</li>
+            <li>Klik op een document om het te openen of te downloaden.</li>
+          </ol>
+        </section>
+
+        <!-- IMPACT -->
+        <section id="impact" class="sec">
+          <div class="sec-ic">◑</div>
+          <h2>Impact</h2>
+          <p class="desc">Uw duurzame resultaten: vermeden CO₂, behouden materiaal en bespaarde kosten door hergebruik.</p>
+          <ol class="steps">
+            <li>Klik in het menu op <span class="path">Impact</span>.</li>
+            <li>Bekijk uw resultaten en de opbouw over de tijd.</li>
+            <li>Gebruik deze cijfers voor uw eigen rapportage richting directie of opdrachtgever.</li>
+          </ol>
+          <div class="tip"><span>💡</span><div>Hoe meer u via de handelsomgeving herplaatst, hoe sterker uw impact-cijfers worden.</div></div>
+        </section>
+
+        <!-- RFID -->
+        <section id="rfid" class="sec">
+          <div class="sec-ic">⌖</div>
+          <h2>RFID <span class="tag">indien beschikbaar</span></h2>
+          <p class="desc">Inventariseer snel met RFID-labels en een scanner.</p>
+          <ol class="steps">
+            <li>Klik in het menu op <span class="path">RFID</span>.</li>
+            <li>Volg de instructies om labels te koppelen aan meubelstukken.</li>
+            <li>Scan een ruimte om in korte tijd de aanwezige stukken te registreren.</li>
+          </ol>
+        </section>
+
+        <!-- EMVI -->
+        <section id="emvi" class="sec">
+          <div class="sec-ic">★</div>
+          <h2>EMVI <span class="tag">indien beschikbaar</span></h2>
+          <p class="desc">Onderbouw uw duurzame prestaties voor aanbestedingen en tenders.</p>
+          <ol class="steps">
+            <li>Klik in het menu op <span class="path">EMVI</span>.</li>
+            <li>Bekijk de onderbouwing die u kunt gebruiken in een aanbesteding.</li>
+          </ol>
+        </section>
+
+        <!-- INSTELLINGEN -->
+        <section id="instellingen" class="sec">
+          <div class="sec-ic">⚙</div>
+          <h2>Instellingen <span class="tag">deels alleen beheerder</span></h2>
+          <p class="desc">Beheer uw omgeving. Sommige onderdelen zijn alleen zichtbaar voor beheerders.</p>
+          <h3>Gebruikers</h3>
+          <ol class="steps">
+            <li>Open <b>Instellingen</b> en klik op <span class="path">Gebruikers</span>.</li>
+            <li>Voeg gebruikers toe en geef ieder de juiste rol en rechten.</li>
+          </ol>
+          <h3>Vormgeving <span class="tag">beheerder</span></h3>
+          <ol class="steps">
+            <li>Open <b>Instellingen</b> en klik op <span class="path">Vormgeving</span>.</li>
+            <li>Pas logo en kleuren aan naar uw eigen huisstijl.</li>
+            <li>Sla op. Niet tevreden? Gebruik “standaard herstellen” om terug te keren naar de oorspronkelijke stijl.</li>
+          </ol>
+          <h3>Scanners, Shopify &amp; Talen</h3>
+          <ol class="steps">
+            <li>Onder <b>Instellingen</b> koppelt u scanners en (indien van toepassing) Shopify.</li>
+            <li>Bij <span class="path">Talen</span> stelt u de gewenste taal van de portal in.</li>
+          </ol>
+        </section>
+
+        <!-- UITLOGGEN -->
+        <section id="uitloggen" class="sec">
+          <div class="sec-ic">⏻</div>
+          <h2>Uitloggen</h2>
+          <p class="desc">Sluit uw sessie veilig af, zeker op een gedeeld apparaat.</p>
+          <ol class="steps">
+            <li>Klik onderaan het menu op <span class="path">Uitloggen</span>.</li>
+            <li>U keert terug naar de inlogpagina.</li>
+          </ol>
+        </section>
+
+        <!-- HELP -->
+        <div class="help">
+          <span class="eyebrow" style="color:#d9c6a3">Komt u er niet uit?</span>
+          <h2>Wij helpen u graag verder.</h2>
+          <p>Staat uw vraag niet in deze handleiding? Neem gerust contact met ons op.</p>
+          <div class="row">
+            <a class="btn gold" href="tel:+31850481444">Bel 085-0481444</a>
+            <a class="btn ghost" href="mailto:info@office-interior.com">info@office-interior.com</a>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <div>© 2026 Office-Interior · Follow O-I</div>
+      <div>info@office-interior.com · <a href="tel:+31850481444" style="color:#cfe1da">085-0481444</a></div>
+    </div>
+  </footer>
+
+</body>
+</html>

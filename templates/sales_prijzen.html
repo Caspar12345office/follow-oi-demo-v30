@@ -1,0 +1,129 @@
+{% extends 'market_base.html' %}
+{% set page = 'prijzen' %}
+{% block title %}Prijzen · Follow O-I{% endblock %}
+
+{% block page_css %}
+  .price-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:stretch}
+  .plan-wrap{position:relative}
+  .plan{display:flex;flex-direction:column;height:100%;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:30px 28px}
+  .plan.featured{background:linear-gradient(160deg,#0f3d3e,#15595a);color:#fff;border:0;box-shadow:0 26px 60px rgba(15,61,62,.26);transform:scale(1.03)}
+  .plan .tier{font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--gold)}
+  .plan h3{font-size:24px;margin:6px 0 4px}
+  .plan .desc{font-size:14px;color:var(--muted);min-height:42px}
+  .plan.featured .desc{color:#cfe1da}
+  .plan .price{display:flex;align-items:baseline;gap:6px;margin:18px 0 4px}
+  .plan .price .amt{font-size:46px;font-weight:800;letter-spacing:-.03em}
+  .plan .price .per{font-size:15px;color:var(--muted)}
+  .plan.featured .price .per{color:#cfe1da}
+  .plan .note{font-size:12.5px;color:var(--gold);font-weight:600;margin-bottom:18px}
+  .plan ul{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:11px}
+  .plan li{display:grid;grid-template-columns:22px 1fr;gap:10px;font-size:14.5px;color:var(--ink)}
+  .plan.featured li{color:#eaf3ee}
+  .plan li .ck{width:20px;height:20px;border-radius:50%;background:var(--soft);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-top:2px}
+  .plan.featured li .ck{background:rgba(255,255,255,.14);color:var(--green)}
+  .plan .btn{margin-top:auto;justify-content:center}
+  .badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:999px;z-index:2}
+
+  .faq{background:var(--panel);border-top:1px solid var(--line)}
+  .faq-item{border:1px solid var(--line);border-radius:16px;background:var(--bg);padding:22px 24px}
+  .faq-item h3{font-size:17px;color:var(--accent);margin-bottom:6px}
+  .faq-item p{margin:0;color:var(--muted);font-size:15px}
+
+  @media(max-width:980px){.price-grid{grid-template-columns:1fr}.plan.featured{transform:none}}
+{% endblock %}
+
+{% block content %}
+  <section class="phero">
+    <div class="wrap">
+      <span class="eyebrow">Prijzen</span>
+      <h1>Een pakket dat <span class="hl">met u meegroeit.</span></h1>
+      <div class="gold-rule"></div>
+      <p>Start klein of rol direct organisatiebreed uit. Geen verrassingen, geen losse modules om bij te kopen.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="price-grid">
+
+        <div class="plan-wrap"><div class="plan">
+          <div class="tier">Starter</div>
+          <h3>Starter</h3>
+          <div class="desc">Voor één locatie die wil starten met circulair meubelbeheer.</div>
+          <div class="price"><span class="amt">€0,-</span><span class="per">/ maand</span></div>
+          <div class="note">Introductieprijs volgt</div>
+          <ul>
+            <li><span class="ck">✓</span> Tot 1 locatie</li>
+            <li><span class="ck">✓</span> Realtime inventaris</li>
+            <li><span class="ck">✓</span> Tickets &amp; schademeldingen</li>
+            <li><span class="ck">✓</span> Basis impact-dashboard</li>
+          </ul>
+          <a class="btn dark-ghost" href="{{ url_for('sales_contact') }}">Kies Starter</a>
+        </div></div>
+
+        <div class="plan-wrap">
+          <span class="badge">Meest gekozen</span>
+          <div class="plan featured">
+            <div class="tier">Professional</div>
+            <h3>Professional</h3>
+            <div class="desc">Voor organisaties met meerdere locaties die circulair willen aantonen.</div>
+            <div class="price"><span class="amt">€0,-</span><span class="per">/ maand</span></div>
+            <div class="note">Introductieprijs volgt</div>
+            <ul>
+              <li><span class="ck">✓</span> Onbeperkt locaties</li>
+              <li><span class="ck">✓</span> Circulaire handelsomgeving</li>
+              <li><span class="ck">✓</span> Volledige impact-rapportage</li>
+              <li><span class="ck">✓</span> Offertes &amp; bestellingen</li>
+              <li><span class="ck">✓</span> Multi-locatie kaart</li>
+            </ul>
+            <a class="btn gold" href="{{ url_for('sales_contact') }}">Kies Professional</a>
+          </div>
+        </div>
+
+        <div class="plan-wrap"><div class="plan">
+          <div class="tier">Enterprise</div>
+          <h3>Enterprise</h3>
+          <div class="desc">Voor grote organisaties en interieurpartners met eigen huisstijl.</div>
+          <div class="price"><span class="amt">€0,-</span><span class="per">/ maand</span></div>
+          <div class="note">Introductieprijs volgt</div>
+          <ul>
+            <li><span class="ck">✓</span> Alles uit Professional</li>
+            <li><span class="ck">✓</span> White-label &amp; eigen branding</li>
+            <li><span class="ck">✓</span> RFID- &amp; scannerkoppeling</li>
+            <li><span class="ck">✓</span> Gebruikersrollen &amp; rechten</li>
+            <li><span class="ck">✓</span> Persoonlijke onboarding</li>
+          </ul>
+          <a class="btn dark-ghost" href="{{ url_for('sales_contact') }}">Kies Enterprise</a>
+        </div></div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="faq">
+    <div class="wrap">
+      <div class="head center">
+        <span class="eyebrow">Veelgestelde vragen</span>
+        <h2>Goed om te weten.</h2>
+      </div>
+      <div class="cols-2">
+        <div class="faq-item"><h3>Zit ik vast aan een lang contract?</h3><p>Nee. We werken met heldere voorwaarden en korte opzegtermijnen, zodat u zonder zorgen kunt starten.</p></div>
+        <div class="faq-item"><h3>Hoe snel kan ik live?</h3><p>Na de demo zetten we samen uw inventaris klaar. De meeste organisaties zijn binnen enkele werkdagen operationeel.</p></div>
+        <div class="faq-item"><h3>Kan ik later upgraden?</h3><p>Altijd. U groeit naadloos van Starter naar Professional of Enterprise zonder uw data te verliezen.</p></div>
+        <div class="faq-item"><h3>Is mijn data veilig?</h3><p>Uw gegevens staan op beveiligde Europese infrastructuur, met gebruikersrollen en rechten per locatie.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-final">
+    <div class="wrap">
+      <span class="eyebrow" style="color:#d9c6a3">Nog vragen over de prijzen?</span>
+      <h2>We denken graag met u mee.</h2>
+      <p>Plan een demo of neem direct contact op. We maken samen een passend voorstel.</p>
+      <div class="hero-cta" style="justify-content:center">
+        <a class="btn gold" href="{{ url_for('sales_contact') }}">Plan een demo →</a>
+        <a class="btn ghost" href="{{ url_for('sales_contact') }}">Neem contact op</a>
+      </div>
+    </div>
+  </section>
+{% endblock %}
