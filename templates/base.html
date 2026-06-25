@@ -52,6 +52,7 @@
         <a class="sub {{ 'active' if request.endpoint=='language_settings' }}" href="{{ url_for('language_settings') }}">Talen</a>
       </details>
       <a class="{{ 'active' if request.endpoint=='handleiding' }}" href="{{ url_for('handleiding') }}">Handleiding</a>
+      <a class="{{ 'active' if request.endpoint=='sales' }}" href="{{ url_for('sales') }}">Verkoop</a>
       <a href="{{ url_for('logout') }}">Uitloggen</a>
     </nav>
   </aside>
