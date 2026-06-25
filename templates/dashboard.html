@@ -1,85 +1,177 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<div class="grid grid4">
-  <div class="card"><div class="muted">Klanten</div><div class="kpi">{{ stats.clients }}</div></div>
-  <div class="card"><div class="muted">Assets</div><div class="kpi">{{ stats.assets }}</div></div>
-  <div class="card"><div class="muted">Open offertes</div><div class="kpi">{{ stats.orders }}</div></div>
-  <div class="card"><div class="muted">Open tickets/schades</div><div class="kpi">{{ stats.tickets + stats.damages }}</div></div>
-</div>
+<style>
+  .dash{display:grid;gap:18px}
+  .dash-2{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+  .dash-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+  .dash-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+  .acc{position:relative;overflow:hidden}
+  .acc:before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--success)}
+  .acc-head{display:flex;align-items:center;gap:16px;margin-top:6px}
+  .avatar{width:60px;height:60px;border-radius:50%;background:var(--soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .meub{background:linear-gradient(135deg,var(--accent),#14595a);color:#fff;display:flex;flex-direction:column;justify-content:space-between}
+  .meub .big{font-size:52px;font-weight:800;line-height:1;margin:8px 0 6px}
+  .meub .sub{color:#cfe7da}
+  .meub .btn{background:#fff;color:var(--accent);align-self:flex-start;margin-top:14px}
+  .qa{display:flex;align-items:center;gap:14px;cursor:pointer}
+  .qa .ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0}
+  .qa .t{font-weight:700}
+  .qa .d{color:var(--muted);font-size:13px}
+  .spark{width:100%;height:auto;aspect-ratio:480/200;display:block}
+  .impact-row{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+  .impact-row .it{flex:1;min-width:120px}
+  .impact-row .v{font-size:22px;font-weight:800}
+  .impact-row .l{color:var(--muted);font-size:12px}
+  @media(max-width:1100px){.dash-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:900px){.dash-2,.dash-3,.dash-4{grid-template-columns:1fr}}
+</style>
 
-<div class="grid grid2">
+<div class="dash">
+
+  <div class="dash-2">
+    <div class="card acc">
+      <div class="eyebrow">Uw vaste aanspreekpunt</div>
+      <div class="acc-head">
+        <div class="avatar">CM</div>
+        <div>
+          <div class="asset-title">Caspar Mastenbroek</div>
+          <div class="muted">Sales Director · Follow O-I</div>
+          <div class="muted" style="margin-top:6px">
+            <a href="mailto:caspar@office-interior.nl">caspar@office-interior.nl</a> · <a href="tel:+31626983165">06 2698 3165</a>
+          </div>
+        </div>
+      </div>
+      <p class="muted" style="margin:14px 0 0">Voor vragen over inrichting, hergebruik, service, verhuizingen of nieuwe projecten. Bij afwezigheid: <a href="mailto:info@office-interior.com">info@office-interior.com</a> · <a href="tel:+31850481444">085-0481444</a>.</p>
+    </div>
+
+    <div class="card meub">
+      <div>
+        <div class="eyebrow" style="color:#cfe7da">Mijn meubilair</div>
+        <div class="big">{{ stats.assets }}</div>
+        <div class="sub">assets in beheer{% if location_count %} · {{ location_count }} locatie(s){% endif %}</div>
+      </div>
+      <a class="btn" href="{{ url_for('assets') }}">Bekijk meubilair →</a>
+    </div>
+  </div>
+
+  <div>
+    <h2 style="margin:4px 0 12px">Snelle acties</h2>
+    <div class="dash-4">
+      <a class="card qa" href="{{ url_for('quote_cart') }}">
+        <div class="ic" style="background:var(--soft);color:var(--accent)">+</div>
+        <div><div class="t">Offerte aanvragen</div><div class="d">stel zelf uw mandje samen</div></div>
+      </a>
+      <a class="card qa" href="{{ url_for('asset_moves') }}">
+        <div class="ic" style="background:var(--soft);color:var(--accent)">⇄</div>
+        <div><div class="t">Meubilair verplaatsen</div><div class="d">verplaats binnen locaties</div></div>
+      </a>
+      <a class="card qa" href="{{ url_for('ticket_new') }}">
+        <div class="ic" style="background:#fbf1e0;color:var(--accent2)">!</div>
+        <div><div class="t">Schade melden</div><div class="d">reparatie of vervanging</div></div>
+      </a>
+      <a class="card qa" href="{{ url_for('marketplace') }}">
+        <div class="ic" style="background:#e9f5e0;color:var(--success)">↑</div>
+        <div><div class="t">Product plaatsen</div><div class="d">aanbieden op de handelsomgeving</div></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="dash-2">
+    <div class="card">
+      <h2 style="margin-bottom:2px">Uw besparing door circulair gebruik</h2>
+      <p class="muted" style="margin:0 0 10px">Cumulatieve kostenbesparing per jaar</p>
+      <svg id="savings-chart" class="spark" viewBox="0 0 480 200"></svg>
+      <div class="impact-row">
+        <div class="it"><div class="v" style="color:var(--accent)">{{ stats.co2 }} kg</div><div class="l">CO₂ vermeden</div></div>
+        <div class="it"><div class="v" style="color:var(--success)">{{ stats.material }} kg</div><div class="l">Materiaalbehoud</div></div>
+        <div class="it"><div class="v" style="color:var(--accent2)">€ {{ stats.cost }}</div><div class="l">Kostenbesparing</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2 style="margin-bottom:2px">Meubilair per locatie</h2>
+          <p class="muted" style="margin:0">Klik op een stip voor details.</p>
+        </div>
+        <span class="pill">{{ map_points|length }} locatie(s){% if map_unmatched %} · {{ map_unmatched }} niet op kaart{% endif %}</span>
+      </div>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+      <div id="nl-map" style="height:300px;border-radius:16px;margin-top:14px;border:1px solid var(--line);z-index:0"></div>
+      {% if not map_points %}<p class="muted" style="margin-top:10px">Nog geen herkenbare plaatsnamen in de locaties. Voeg een plaatsnaam toe aan de locatie van een asset (bijv. "Arnhem HQ") om stippen te tonen.</p>{% endif %}
+    </div>
+  </div>
+
   <div class="card">
-    <h2>Snelle acties</h2>
-    <div class="actions">
-      <a class="btn" href="{{ url_for('marketplace') }}">Circulaire handelsomgeving</a>
-      <a class="btn secondary" href="{{ url_for('ticket_new') }}">Ticket aanmaken</a>
-      <a class="btn secondary" href="{{ url_for('products') }}">Productcatalogus</a>
-      <a class="btn secondary" href="{{ url_for('orders') }}">Offerteoverzicht</a>
-    </div>
+    <h2>Recent meubilair</h2>
+    <table>
+      <tr><th>Asset</th><th>Klant</th><th>Categorie</th><th>Locatie</th><th>Status</th></tr>
+      {% for a in recent %}
+      <tr><td>{{ a.asset_code }}</td><td>{{ a.client_name }}</td><td>{{ a.category }}</td><td>{{ a.location }} {{ a.room }}</td><td>{{ a.status }}</td></tr>
+      {% endfor %}
+    </table>
   </div>
 
-  <div class="card contact-card">
-    <h2>Jouw vaste aanspreekpunt</h2>
-    <div class="asset-title">Caspar Mastenbroek</div>
-    <p class="muted">Sales Director | Follow O-I</p>
-    <p>
-      <strong>E-mail:</strong> <a href="mailto:caspar@office-interior.nl">caspar@office-interior.nl</a><br>
-      <strong>Telefoon:</strong> <a href="tel:+31626983165">06 2698 3165</a>
-    </p>
-    <p class="muted">Voor vragen over inrichting, hergebruik, service, verhuizingen of nieuwe projecten.</p>
-    <p class="muted">Voor algemene vragen of bij afwezigheid kun je contact opnemen via <a href="mailto:info@office-interior.com">info@office-interior.com</a> of <a href="tel:+31850481444">085-0481444</a>.</p>
-  </div>
 </div>
 
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
-    <div>
-      <h2 style="margin-bottom:4px">Meubilair op de kaart</h2>
-      <p class="muted" style="margin:0">Locaties in Nederland waar klanten meubilair hebben staan. Klik op een stip voor details.</p>
-    </div>
-    <span class="pill">{{ map_points|length }} locatie(s){% if map_unmatched %} · {{ map_unmatched }} niet op kaart{% endif %}</span>
-  </div>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <div id="nl-map" style="height:420px;border-radius:16px;margin-top:14px;border:1px solid var(--line);z-index:0"></div>
-  {% if not map_points %}<p class="muted" style="margin-top:10px">Nog geen herkenbare plaatsnamen in de locaties. Voeg een plaatsnaam toe aan de locatie van een asset (bijv. "Arnhem HQ") om stippen te tonen.</p>{% endif %}
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    (function(){
-      var points = {{ map_points|tojson }};
-      var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#0f3d3e';
-      function init(){
-        if(typeof L === 'undefined'){ setTimeout(init, 200); return; }
-        var map = L.map('nl-map', {scrollWheelZoom:false}).setView([52.15, 5.4], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 18, attribution: '&copy; OpenStreetMap'
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Besparingsgrafiek
+  (function(){
+    var data = {{ savings_series|tojson }};
+    var svg = document.getElementById('savings-chart');
+    if(!svg || !data.length) return;
+    var css = getComputedStyle(document.documentElement);
+    var line = css.getPropertyValue('--success').trim() || '#78b743';
+    var muted = css.getPropertyValue('--muted').trim() || '#9a9486';
+    var grid = css.getPropertyValue('--line').trim() || '#efe9dd';
+    var W=480, H=200, L=16, R=16, T=18, B=34;
+    var iw=W-L-R, ih=H-T-B;
+    var vals=data.map(function(d){return d.value;});
+    var maxV=Math.max.apply(null,vals), minV=Math.min.apply(null,vals);
+    if(maxV===minV){ maxV=minV+1; }
+    function x(i){ return data.length<2 ? L+iw/2 : L + iw*i/(data.length-1); }
+    function y(v){ return T + ih*(1-(v-minV)/(maxV-minV)); }
+    var parts=[];
+    [0.5,1].forEach(function(f){ var gy=T+ih*f; parts.push('<line x1="'+L+'" y1="'+gy+'" x2="'+(W-R)+'" y2="'+gy+'" stroke="'+grid+'"/>'); });
+    var lpts=data.map(function(d,i){return x(i)+','+y(d.value);}).join(' ');
+    var area='M'+x(0)+','+(T+ih)+' L'+lpts.split(' ').join(' L')+' L'+x(data.length-1)+','+(T+ih)+' Z';
+    parts.push('<path d="'+area+'" fill="'+line+'" fill-opacity="0.14"/>');
+    parts.push('<polyline points="'+lpts+'" fill="none" stroke="'+line+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>');
+    data.forEach(function(d,i){
+      parts.push('<circle cx="'+x(i)+'" cy="'+y(d.value)+'" r="'+(i===data.length-1?5:3.5)+'" fill="'+line+'"/>');
+      parts.push('<text x="'+x(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" fill="'+muted+'">'+d.label+'</text>');
+    });
+    svg.innerHTML=parts.join('');
+  })();
+
+  // Kaart
+  (function(){
+    var points = {{ map_points|tojson }};
+    var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#0f3d3e';
+    function init(){
+      if(typeof L === 'undefined'){ setTimeout(init, 200); return; }
+      var map = L.map('nl-map', {scrollWheelZoom:false}).setView([52.15, 5.4], 7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18, attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+      var bounds = [];
+      points.forEach(function(p){
+        var r = Math.min(26, 9 + p.count * 2);
+        var m = L.circleMarker([p.lat, p.lng], {
+          radius: r, color: accent, weight: 2, fillColor: accent, fillOpacity: 0.55
         }).addTo(map);
-        var bounds = [];
-        points.forEach(function(p){
-          var r = Math.min(26, 9 + p.count * 2);
-          var m = L.circleMarker([p.lat, p.lng], {
-            radius: r, color: accent, weight: 2, fillColor: accent, fillOpacity: 0.55
-          }).addTo(map);
-          var clients = p.clients.join(', ');
-          var locs = p.locations.join('<br>');
-          m.bindPopup('<strong>' + p.name + '</strong><br>' + p.count + ' asset(s)<br><span style="color:#6b7280">' + clients + '</span><br>' + locs);
-          bounds.push([p.lat, p.lng]);
-        });
-        if(bounds.length === 1){ map.setView(bounds[0], 9); }
-        else if(bounds.length > 1){ map.fitBounds(bounds, {padding:[40,40]}); }
-      }
-      init();
-    })();
-  </script>
-</div>
-
-<div class="card">
-  <h2>Recent meubilair</h2>
-  <table>
-    <tr><th>Asset</th><th>Klant</th><th>Categorie</th><th>Locatie</th><th>Status</th></tr>
-    {% for a in recent %}
-    <tr><td>{{ a.asset_code }}</td><td>{{ a.client_name }}</td><td>{{ a.category }}</td><td>{{ a.location }} {{ a.room }}</td><td>{{ a.status }}</td></tr>
-    {% endfor %}
-  </table>
-</div>
+        var clients = p.clients.join(', ');
+        var locs = p.locations.join('<br>');
+        m.bindPopup('<strong>' + p.name + '</strong><br>' + p.count + ' asset(s)<br><span style="color:#6b7280">' + clients + '</span><br>' + locs);
+        bounds.push([p.lat, p.lng]);
+      });
+      if(bounds.length === 1){ map.setView(bounds[0], 9); }
+      else if(bounds.length > 1){ map.fitBounds(bounds, {padding:[40,40]}); }
+    }
+    init();
+  })();
+</script>
 {% endblock %}

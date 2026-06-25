@@ -193,13 +193,13 @@ THEME_DEFAULTS = {
     "accent": "#0f3d3e",
     "accent2": "#b88a44",
     "bg": "#f6f3ee",
-    "panel": "#fffdf8",
-    "text": "#172033",
-    "muted": "#6b7280",
-    "line": "#e6ded2",
-    "soft": "#efe6d8",
-    "danger": "#ef4444",
-    "success": "#1f7a4d",
+    "panel": "#ffffff",
+    "text": "#1c1a16",
+    "muted": "#9a9486",
+    "line": "#e7e1d6",
+    "soft": "#eef3ec",
+    "danger": "#c0533f",
+    "success": "#78b743",
     "warn": "#b88a44",
 }
 
@@ -276,6 +276,27 @@ def build_map_points(conn):
                         "clients": sorted(p["clients"]), "locations": sorted(p["locations"])})
     result.sort(key=lambda x: x["count"], reverse=True)
     return result, unmatched
+
+
+def build_savings_series(conn):
+    """Cumulatieve kostenbesparing per jaar, op basis van de aanschafdatum van assets
+    (valt terug op created_at). Geeft een eerlijke opbouw, ook bij weinig data."""
+    rows = conn.execute("""SELECT strftime('%Y', COALESCE(NULLIF(purchase_date,''), created_at)) yr,
+                                  COALESCE(SUM(cost_saving_eur),0) v
+                           FROM assets
+                           WHERE COALESCE(NULLIF(purchase_date,''), created_at) IS NOT NULL
+                           GROUP BY yr ORDER BY yr""").fetchall()
+    yearly = [(r["yr"], r["v"] or 0) for r in rows if r["yr"]]
+    if not yearly:
+        return []
+    years = [int(y) for y, _ in yearly]
+    full = range(min(years), max(years) + 1)
+    by_year = {int(y): v for y, v in yearly}
+    series, running = [], 0
+    for y in full:
+        running += by_year.get(y, 0)
+        series.append({"label": str(y), "value": round(running)})
+    return series
 
 
 def clean_delivery_options(values):
@@ -1171,7 +1192,9 @@ def dashboard():
         "tickets": conn.execute("SELECT COUNT(*) c FROM tickets WHERE status!='gesloten'").fetchone()["c"],
         "co2": round(conn.execute("SELECT COALESCE(SUM(co2_kg),0) c FROM assets").fetchone()["c"]),
         "material": round(conn.execute("SELECT COALESCE(SUM(material_kg),0) c FROM assets").fetchone()["c"]),
+        "cost": round(conn.execute("SELECT COALESCE(SUM(cost_saving_eur),0) c FROM assets").fetchone()["c"]),
     }
+    savings_series = build_savings_series(conn)
     recent = conn.execute("""SELECT a.*, c.name client_name FROM assets a JOIN clients c ON c.id=a.client_id
                              ORDER BY a.id DESC LIMIT 8""").fetchall()
     category_summary = conn.execute("""
@@ -1182,7 +1205,8 @@ def dashboard():
     map_points, map_unmatched = build_map_points(conn)
     conn.close()
     return render_template("dashboard.html", stats=stats, recent=recent, category_summary=category_summary,
-                           location_count=location_count, map_points=map_points, map_unmatched=map_unmatched)
+                           location_count=location_count, map_points=map_points, map_unmatched=map_unmatched,
+                           savings_series=savings_series)
 
 @app.route("/clients")
 def clients():

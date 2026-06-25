@@ -141,7 +141,7 @@ document.addEventListener('change', function(e){
     {% if has_perm('edit_assets') %}<a class="btn secondary" href="{{ url_for('asset_marketplace_edit', asset_id=a.id) }}">Beheren</a>{% if a.marketplace_status=='gereserveerd' %}<form method="post" action="{{ url_for('marketplace_release', asset_id=a.id) }}"><button class="btn secondary">Vrijgeven</button></form>{% endif %}{% endif %}
   </div>
 </div>
-{% else %}<div class="card"><p class="muted">Geen marketplace-items gevonden. Plaats een nieuw product via de knop hierboven of maak een bestaande asset beschikbaar via Huidig meubilair.</p></div>{% endfor %}
+{% else %}<div class="card"><p class="muted">Geen items in de circulaire handelsomgeving gevonden. Plaats een nieuw product via de knop hierboven of maak een bestaande asset beschikbaar via Huidig meubilair.</p></div>{% endfor %}
 
 <script>
 document.addEventListener('change', function(e){
