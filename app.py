@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, Response
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, Response, flash
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3, os, csv, io, secrets, random, html, smtplib, json, re, urllib.request, urllib.error
@@ -694,6 +694,42 @@ def init_db():
     )
     """)
     c.execute("""
+    CREATE TABLE IF NOT EXISTS quotes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER,
+        contact_name TEXT,
+        contact_email TEXT,
+        contact_phone TEXT,
+        delivery_address TEXT,
+        billing_address TEXT,
+        desired_delivery_date TEXT,
+        assembly TEXT,
+        note TEXT,
+        status TEXT NOT NULL DEFAULT 'offerte aangevraagd',
+        created_at TEXT NOT NULL
+    )
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS quote_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quote_id INTEGER NOT NULL,
+        product_id INTEGER,
+        name TEXT NOT NULL,
+        sku TEXT,
+        price_text TEXT,
+        quantity INTEGER NOT NULL DEFAULT 1,
+        note TEXT,
+        is_custom INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    )
+    """)
+    for sql in [
+        "ALTER TABLE clients ADD COLUMN default_delivery_address TEXT",
+        "ALTER TABLE clients ADD COLUMN default_billing_address TEXT",
+    ]:
+        try: c.execute(sql)
+        except Exception: pass
+    c.execute("""
     CREATE TABLE IF NOT EXISTS damages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         client_id INTEGER NOT NULL,
@@ -828,9 +864,25 @@ def require_login():
 
 LANGUAGES = {"nl": "Nederlands", "en": "English"}
 
+def get_cart():
+    cart = session.get("quote_cart")
+    if not isinstance(cart, list):
+        cart = []
+    return cart
+
+
+def save_cart(cart):
+    session["quote_cart"] = cart
+    session.modified = True
+
+
+def cart_count():
+    return sum(int(i.get("quantity") or 1) for i in get_cart())
+
+
 @app.context_processor
 def inject():
-    return {"user": current_user(), "has_perm": has_perm, "PERMISSION_KEYS": PERMISSION_KEYS, "LANGUAGES": LANGUAGES, "settings": get_site_settings(), "DELIVERY_OPTIONS": DELIVERY_OPTIONS}
+    return {"user": current_user(), "has_perm": has_perm, "PERMISSION_KEYS": PERMISSION_KEYS, "LANGUAGES": LANGUAGES, "settings": get_site_settings(), "DELIVERY_OPTIONS": DELIVERY_OPTIONS, "cart_count": cart_count()}
 
 @app.route("/settings/language", methods=["GET","POST"])
 def language_settings():
@@ -1148,11 +1200,13 @@ def client_new():
     if request.method == "POST":
         conn = db()
         conn.execute("""INSERT INTO clients
-                        (name,contact_name,contact_email,contact_phone,account_manager_name,account_manager_email,account_manager_phone,created_at)
-                        VALUES (?,?,?,?,?,?,?,?)""",
+                        (name,contact_name,contact_email,contact_phone,account_manager_name,account_manager_email,account_manager_phone,default_delivery_address,default_billing_address,created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?)""",
                      (request.form["name"], request.form.get("contact_name"), request.form.get("contact_email"),
                       request.form.get("contact_phone"), request.form.get("account_manager_name"),
-                      request.form.get("account_manager_email"), request.form.get("account_manager_phone"), now()))
+                      request.form.get("account_manager_email"), request.form.get("account_manager_phone"),
+                      (request.form.get("default_delivery_address") or "").strip(),
+                      (request.form.get("default_billing_address") or "").strip(), now()))
         conn.commit(); conn.close()
         return redirect(url_for("clients"))
     return render_template("client_form.html")
@@ -1558,44 +1612,180 @@ def product_new():
 
 @app.route("/products/<int:product_id>/quote")
 def product_quote(product_id):
+    # Voegt het product toe aan de offerte (mandje) en gaat naar de offertepagina.
     if not require_login(): return redirect(url_for("login"))
-    return redirect(url_for("order_new", product_id=product_id))
+    conn = db()
+    p = conn.execute("SELECT * FROM products WHERE id=?", (product_id,)).fetchone()
+    conn.close()
+    if not p:
+        flash("Product niet gevonden.")
+        return redirect(url_for("products"))
+    _cart_add_product(p)
+    flash(f"“{p['name']}” is toegevoegd aan je offerte.")
+    return redirect(url_for("quote_cart"))
+
+
+def _cart_add_product(p, quantity=1):
+    cart = get_cart()
+    for item in cart:
+        if not item.get("is_custom") and item.get("product_id") == p["id"]:
+            item["quantity"] = int(item.get("quantity") or 1) + quantity
+            save_cart(cart)
+            return
+    cart.append({
+        "product_id": p["id"], "name": p["name"], "sku": p["sku"] or "",
+        "price_text": p["price_text"] or "", "quantity": quantity, "note": "", "is_custom": False,
+    })
+    save_cart(cart)
+
+
+@app.route("/quote/add", methods=["POST"])
+def quote_add():
+    if not require_login(): return redirect(url_for("login"))
+    product_id = request.form.get("product_id")
+    if product_id:
+        conn = db()
+        p = conn.execute("SELECT * FROM products WHERE id=?", (product_id,)).fetchone()
+        conn.close()
+        if p:
+            try: qty = max(1, int(request.form.get("quantity") or 1))
+            except ValueError: qty = 1
+            _cart_add_product(p, qty)
+            flash(f"“{p['name']}” toegevoegd aan je offerte.")
+    else:
+        name = (request.form.get("custom_name") or "").strip()
+        if name:
+            try: qty = max(1, int(request.form.get("quantity") or 1))
+            except ValueError: qty = 1
+            cart = get_cart()
+            cart.append({
+                "product_id": None, "name": name, "sku": "", "price_text": "",
+                "quantity": qty, "note": (request.form.get("custom_note") or "").strip(), "is_custom": True,
+            })
+            save_cart(cart)
+            flash(f"Eigen product “{name}” toegevoegd aan je offerte.")
+        else:
+            flash("Vul een omschrijving in bij 'Anders, namelijk…'.")
+    return redirect(request.form.get("next") or url_for("quote_cart"))
+
+
+@app.route("/quote/update", methods=["POST"])
+def quote_update():
+    if not require_login(): return redirect(url_for("login"))
+    cart = get_cart()
+    action = request.form.get("action")
+    if action == "clear":
+        save_cart([])
+        flash("Offerte geleegd.")
+        return redirect(url_for("quote_cart"))
+    if action == "remove":
+        try:
+            idx = int(request.form.get("index"))
+            if 0 <= idx < len(cart):
+                removed = cart.pop(idx)
+                flash(f"“{removed['name']}” verwijderd.")
+        except (TypeError, ValueError):
+            pass
+        save_cart(cart)
+        return redirect(url_for("quote_cart"))
+    # action == update: lees hoeveelheden per regel
+    for i, item in enumerate(cart):
+        raw = request.form.get(f"qty_{i}")
+        if raw is not None:
+            try: item["quantity"] = max(1, int(raw))
+            except ValueError: pass
+    save_cart(cart)
+    flash("Aantallen bijgewerkt.")
+    return redirect(url_for("quote_cart"))
+
+
+@app.route("/quote", methods=["GET"])
+def quote_cart():
+    blocked = require_perm("edit_orders")
+    if blocked: return blocked
+    conn = db()
+    clients = conn.execute("SELECT id,name,contact_name,contact_email,contact_phone,default_delivery_address,default_billing_address FROM clients ORDER BY name").fetchall()
+    conn.close()
+    return render_template("quote.html", cart=get_cart(), clients=clients,
+                           preselect=request.args.get("client_id"), today=today())
+
+
+@app.route("/quote/submit", methods=["POST"])
+def quote_submit():
+    blocked = require_perm("edit_orders")
+    if blocked: return blocked
+    cart = get_cart()
+    if not cart:
+        flash("Je offerte is leeg. Voeg eerst producten toe.")
+        return redirect(url_for("quote_cart"))
+    delivery = (request.form.get("delivery_address") or "").strip()
+    billing = (request.form.get("billing_address") or "").strip()
+    if not delivery or not billing:
+        flash("Vul zowel een leveradres als een factuuradres in.")
+        return redirect(url_for("quote_cart"))
+    conn = db()
+    client_id = request.form.get("client_id") or None
+    cur = conn.execute("""INSERT INTO quotes
+                    (client_id,contact_name,contact_email,contact_phone,delivery_address,billing_address,desired_delivery_date,assembly,note,status,created_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                 (client_id, request.form.get("contact_name"), request.form.get("contact_email"),
+                  request.form.get("contact_phone"), delivery, billing,
+                  request.form.get("desired_delivery_date"), request.form.get("assembly"),
+                  request.form.get("note"), "offerte aangevraagd", now()))
+    quote_id = cur.lastrowid
+    for item in cart:
+        conn.execute("""INSERT INTO quote_items
+                        (quote_id,product_id,name,sku,price_text,quantity,note,is_custom,created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?)""",
+                     (quote_id, item.get("product_id"), item["name"], item.get("sku"),
+                      item.get("price_text"), int(item.get("quantity") or 1), item.get("note"),
+                      1 if item.get("is_custom") else 0, now()))
+    # standaardadressen opslaan voor de klant indien gevraagd
+    if client_id and request.form.get("save_default_addresses"):
+        conn.execute("UPDATE clients SET default_delivery_address=?, default_billing_address=? WHERE id=?",
+                     (delivery, billing, client_id))
+    conn.commit()
+    conn.close()
+    save_cart([])
+    log_event(current_user()["id"], "QUOTE_REQUESTED", f"Offerte #{quote_id} met {len(cart)} regel(s)")
+    flash(f"Offerteaanvraag #{quote_id} met {len(cart)} product(en) is verzonden.")
+    return redirect(url_for("orders"))
+
 
 @app.route("/orders")
 def orders():
     blocked = require_perm("view_orders")
     if blocked: return blocked
     conn = db()
-    rows = conn.execute("""SELECT o.*, c.name client_name FROM orders o JOIN clients c ON c.id=o.client_id
+    quotes = conn.execute("""SELECT q.*, c.name client_name FROM quotes q
+                             LEFT JOIN clients c ON c.id=q.client_id ORDER BY q.id DESC""").fetchall()
+    items_by_quote = {}
+    for it in conn.execute("SELECT * FROM quote_items ORDER BY id").fetchall():
+        items_by_quote.setdefault(it["quote_id"], []).append(it)
+    legacy = conn.execute("""SELECT o.*, c.name client_name FROM orders o JOIN clients c ON c.id=o.client_id
                            ORDER BY o.id DESC""").fetchall()
     conn.close()
-    return render_template("orders.html", orders=rows)
+    return render_template("orders.html", quotes=quotes, items_by_quote=items_by_quote, legacy=legacy)
 
-@app.route("/orders/new", methods=["GET","POST"])
+
+@app.route("/orders/new")
 def order_new():
-    blocked = require_perm("edit_orders")
+    # Oude losse-offerteflow vervangen door de offerte met meerdere producten.
+    if not require_login(): return redirect(url_for("login"))
+    return redirect(url_for("quote_cart", client_id=request.args.get("client_id")))
+
+
+@app.route("/clients/<int:client_id>/addresses", methods=["POST"])
+def client_addresses(client_id):
+    blocked = require_perm("edit_clients")
     if blocked: return blocked
     conn = db()
-    clients = conn.execute("SELECT id,name FROM clients ORDER BY name").fetchall()
-    preselect = request.args.get("client_id")
-    product_id = request.args.get("product_id")
-    selected_product = None
-    if product_id:
-        selected_product = conn.execute("SELECT * FROM products WHERE id=?", (product_id,)).fetchone()
-    if request.method == "POST":
-        conn.execute("""INSERT INTO orders
-                        (client_id,furniture_type,quantity,color,quality,delivery_location,room,desired_delivery_date,assembly,note,status,created_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
-                     (request.form["client_id"], request.form["furniture_type"], request.form["quantity"], request.form.get("color"),
-                      request.form.get("quality"), request.form.get("delivery_location"), request.form.get("room"),
-                      request.form.get("desired_delivery_date"), request.form.get("assembly"), request.form.get("note"),
-                      "offerte aangevraagd", now()))
-        conn.commit()
-        cid = request.form["client_id"]
-        conn.close()
-        return redirect(url_for("client_portal", client_id=cid))
-    conn.close()
-    return render_template("order_form.html", clients=clients, preselect=preselect, selected_product=selected_product)
+    conn.execute("UPDATE clients SET default_delivery_address=?, default_billing_address=? WHERE id=?",
+                 ((request.form.get("default_delivery_address") or "").strip(),
+                  (request.form.get("default_billing_address") or "").strip(), client_id))
+    conn.commit(); conn.close()
+    flash("Standaardadressen opgeslagen.")
+    return redirect(url_for("client_portal", client_id=client_id))
 
 @app.route("/damages", methods=["GET","POST"])
 def damages():

@@ -1,1 +1,20 @@
-{% extends 'base.html' %}{% block title %}Nieuwe klant{% endblock %}{% block content %}<div class="card"><form method="post"><div class="form-row"><div><label>Naam</label><input name="name" required></div><div><label>Contactpersoon</label><input name="contact_name"></div><div><label>Contact e-mail</label><input name="contact_email"></div><div><label>Telefoon</label><input name="contact_phone"></div><div><label>Accountmanager</label><input name="account_manager_name"></div><div><label>Accountmanager e-mail</label><input name="account_manager_email"></div></div><br><button class="btn">Opslaan</button></form></div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Nieuwe klant{% endblock %}{% block content %}
+<div class="card">
+  <form method="post">
+    <div class="form-row">
+      <div><label>Naam</label><input name="name" required></div>
+      <div><label>Contactpersoon</label><input name="contact_name"></div>
+      <div><label>Contact e-mail</label><input name="contact_email"></div>
+      <div><label>Telefoon</label><input name="contact_phone"></div>
+      <div><label>Accountmanager</label><input name="account_manager_name"></div>
+      <div><label>Accountmanager e-mail</label><input name="account_manager_email"></div>
+    </div>
+    <div class="form-row" style="margin-top:6px">
+      <div><label>Standaard leveradres</label><textarea name="default_delivery_address" placeholder="Straat en huisnummer&#10;Postcode en plaats"></textarea></div>
+      <div><label>Standaard factuuradres</label><textarea name="default_billing_address" placeholder="Straat en huisnummer&#10;Postcode en plaats"></textarea></div>
+    </div>
+    <p class="muted">Standaardadressen worden automatisch voorgesteld bij een offerteaanvraag voor deze klant.</p>
+    <button class="btn">Opslaan</button>
+  </form>
+</div>
+{% endblock %}

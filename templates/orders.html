@@ -1,1 +1,46 @@
-{% extends 'base.html' %}{% block title %}Offertes{% endblock %}{% block content %}<div class='card'><h2>Offertes</h2><div class='actions'><a class="btn" href="{{ url_for('order_new') }}">Offerte aanvragen</a></div></div><div class='card'><table><tr><th>Klant</th><th>Type</th><th>Aantal</th><th>Status</th></tr>{% for r in rows %}<tr><td>{{ r.client_name }}</td><td>{{ r.furniture_type }}</td><td>{{ r.quantity }}</td><td>{{ r.status }}</td></tr>{% endfor %}</table></div>{% endblock %}
+{% extends 'base.html' %}{% block title %}Offerteoverzicht{% endblock %}{% block content %}
+<div class="card">
+  <h2>Offerteoverzicht</h2>
+  <div class="actions"><a class="btn success" href="{{ url_for('quote_cart') }}">Nieuwe offerte aanvragen</a></div>
+</div>
+
+{% for q in quotes %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="asset-title">Offerte #{{ q.id }}{% if q.client_name %} · {{ q.client_name }}{% endif %}</div>
+      <p class="muted" style="margin:4px 0">Aangevraagd: {{ q.created_at }}{% if q.desired_delivery_date %} · gewenste leverdatum: {{ q.desired_delivery_date }}{% endif %}{% if q.assembly %} · montage: {{ q.assembly }}{% endif %}</p>
+    </div>
+    <span class="pill orange">{{ q.status }}</span>
+  </div>
+  <table style="margin-top:10px">
+    <tr><th>Product</th><th>Detail</th><th style="width:90px">Aantal</th></tr>
+    {% for it in items_by_quote.get(q.id, []) %}
+    <tr>
+      <td><strong>{{ it.name }}</strong>{% if it.is_custom %} <span class="pill orange">Eigen product</span>{% endif %}{% if it.note %}<br><span class="muted">{{ it.note }}</span>{% endif %}</td>
+      <td class="muted">{% if it.sku %}{{ it.sku }}{% endif %}{% if it.price_text %} · {{ it.price_text }}{% endif %}</td>
+      <td>{{ it.quantity }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="grid grid2" style="margin-top:12px">
+    <div><div class="muted">Leveradres</div><div style="white-space:pre-line">{{ q.delivery_address or '—' }}</div></div>
+    <div><div class="muted">Factuuradres</div><div style="white-space:pre-line">{{ q.billing_address or '—' }}</div></div>
+  </div>
+  {% if q.contact_name or q.contact_email or q.contact_phone %}<p class="muted" style="margin-top:10px">Contact: {{ q.contact_name }}{% if q.contact_email %} · {{ q.contact_email }}{% endif %}{% if q.contact_phone %} · {{ q.contact_phone }}{% endif %}</p>{% endif %}
+  {% if q.note %}<p style="margin-top:8px">{{ q.note }}</p>{% endif %}
+</div>
+{% else %}
+<div class="card muted">Nog geen offertes aangevraagd. Begin in de <a href="{{ url_for('products') }}">productcatalogus</a>.</div>
+{% endfor %}
+
+{% if legacy %}
+<div class="card">
+  <h3>Eerdere losse aanvragen</h3>
+  <table>
+    <tr><th>Klant</th><th>Type</th><th>Aantal</th><th>Status</th></tr>
+    {% for r in legacy %}<tr><td>{{ r.client_name }}</td><td>{{ r.furniture_type }}</td><td>{{ r.quantity }}</td><td>{{ r.status }}</td></tr>{% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

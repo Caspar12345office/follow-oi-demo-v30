@@ -30,7 +30,7 @@
       </details>
       <details>
         <summary>Offertes</summary>
-        {% if has_perm('edit_orders') %}<a class="sub" href="{{ url_for('order_new') }}">Offerte aanvragen</a>{% endif %}
+        {% if has_perm('edit_orders') %}<a class="sub" href="{{ url_for('quote_cart') }}">Mijn offerte{% if cart_count %} <span class="pill" style="padding:1px 8px;font-size:11px">{{ cart_count }}</span>{% endif %}</a>{% endif %}
         {% if has_perm('view_orders') %}<a class="sub" href="{{ url_for('orders') }}">Offerteoverzicht</a>{% endif %}
       </details>
       <details>
@@ -54,7 +54,7 @@
       <a href="{{ url_for('logout') }}">Uitloggen</a>
     </nav>
   </aside>
-  <main class="main"><div class="top"><div><h1>{% block title %}Follow O-I{% endblock %}</h1><div class="muted">{{ user.name }}</div></div></div>{% block content %}{% endblock %}</main>
+  <main class="main"><div class="top"><div><h1>{% block title %}Follow O-I{% endblock %}</h1><div class="muted">{{ user.name }}</div></div></div>{% with msgs = get_flashed_messages() %}{% if msgs %}{% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}{% endwith %}{% block content %}{% endblock %}</main>
 </div>
 {% else %}{% block public %}{% endblock %}{% endif %}
 </body>

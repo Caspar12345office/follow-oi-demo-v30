@@ -1,0 +1,117 @@
+{% extends 'base.html' %}{% block title %}Mijn offerte{% endblock %}{% block content %}
+<div class="card">
+  <h2>Mijn offerte</h2>
+  <p class="muted">Voeg meerdere producten samen op één offerte. Pas de aantallen aan, voeg een eigen product toe via “Anders, namelijk…”, en vul tot slot je lever- en factuuradres in.</p>
+</div>
+
+{% if cart %}
+<div class="card">
+  <h3>Producten op deze offerte</h3>
+  <form id="qtyform" method="post" action="{{ url_for('quote_update') }}"><input type="hidden" name="action" value="update"></form>
+  <table>
+    <tr><th>Product</th><th>Detail</th><th style="width:120px">Aantal</th><th style="width:60px"></th></tr>
+    {% for item in cart %}
+    <tr>
+      <td><strong>{{ item.name }}</strong>{% if item.is_custom %} <span class="pill orange">Eigen product</span>{% endif %}{% if item.note %}<br><span class="muted">{{ item.note }}</span>{% endif %}</td>
+      <td class="muted">{% if item.sku %}{{ item.sku }}{% endif %}{% if item.price_text %} · {{ item.price_text }}{% endif %}</td>
+      <td><input form="qtyform" type="number" name="qty_{{ loop.index0 }}" value="{{ item.quantity }}" min="1"></td>
+      <td>
+        <form method="post" action="{{ url_for('quote_update') }}" style="margin:0">
+          <input type="hidden" name="action" value="remove"><input type="hidden" name="index" value="{{ loop.index0 }}">
+          <button class="btn danger" title="Verwijderen">×</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="actions" style="margin-top:14px">
+    <button form="qtyform" class="btn secondary">Aantallen bijwerken</button>
+    <a class="btn secondary" href="{{ url_for('products') }}">Meer producten toevoegen</a>
+    <form method="post" action="{{ url_for('quote_update') }}" style="margin:0" onsubmit="return confirm('Hele offerte leegmaken?');"><input type="hidden" name="action" value="clear"><button class="btn secondary">Offerte leegmaken</button></form>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <p class="muted">Je offerte is nog leeg. Voeg producten toe vanuit de <a href="{{ url_for('products') }}">productcatalogus</a>, of voeg hieronder een eigen product toe.</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>Anders, namelijk… <span class="muted" style="font-weight:400;font-size:14px">(product dat niet in de catalogus staat)</span></h3>
+  <form method="post" action="{{ url_for('quote_add') }}">
+    <div class="form-row">
+      <div style="grid-column:1/2"><label>Omschrijving</label><input name="custom_name" placeholder="Bijv. maatwerk vergadertafel 320cm"></div>
+      <div><label>Aantal</label><input type="number" name="quantity" value="1" min="1"></div>
+    </div>
+    <label>Toelichting (optioneel)</label>
+    <textarea name="custom_note" placeholder="Afmetingen, kleur, materiaal, gewenste specificaties…"></textarea>
+    <div class="actions" style="margin-top:12px"><button class="btn">Eigen product toevoegen</button></div>
+  </form>
+</div>
+
+{% if cart %}
+<div class="card">
+  <h3>Gegevens & adressen</h3>
+  <form method="post" action="{{ url_for('quote_submit') }}">
+    <div class="form-row">
+      <div>
+        <label>Klant</label>
+        <select name="client_id" id="clientSelect" onchange="fillClient()">
+          <option value="">— Geen / handmatig invullen —</option>
+          {% for c in clients %}
+          <option value="{{ c.id }}"
+            data-contact-name="{{ c.contact_name or '' }}" data-contact-email="{{ c.contact_email or '' }}" data-contact-phone="{{ c.contact_phone or '' }}"
+            data-delivery="{{ c.default_delivery_address or '' }}" data-billing="{{ c.default_billing_address or '' }}"
+            {% if preselect and preselect|string==c.id|string %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div><label>Contactpersoon</label><input name="contact_name" id="contactName"></div>
+      <div><label>Contact e-mail</label><input name="contact_email" id="contactEmail"></div>
+      <div><label>Telefoon</label><input name="contact_phone" id="contactPhone"></div>
+      <div><label>Gewenste leverdatum</label><input type="date" name="desired_delivery_date" value="{{ today }}"></div>
+      <div><label>Montage gewenst?</label><select name="assembly"><option>Ja</option><option>Nee</option></select></div>
+    </div>
+
+    <div class="form-row" style="margin-top:6px">
+      <div>
+        <label>Leveradres *</label>
+        <textarea name="delivery_address" id="deliveryAddr" required placeholder="Straat en huisnummer&#10;Postcode en plaats"></textarea>
+        <button type="button" class="btn secondary" style="margin-top:8px" onclick="useDefault('delivery')">Standaard leveradres van klant</button>
+      </div>
+      <div>
+        <label>Factuuradres *</label>
+        <textarea name="billing_address" id="billingAddr" required placeholder="Straat en huisnummer&#10;Postcode en plaats"></textarea>
+        <div class="actions" style="margin-top:8px">
+          <button type="button" class="btn secondary" onclick="useDefault('billing')">Standaard factuuradres van klant</button>
+          <button type="button" class="btn secondary" onclick="copyDelivery()">Zelfde als leveradres</button>
+        </div>
+      </div>
+    </div>
+
+    <label style="margin-top:10px">Notitie</label>
+    <textarea name="note" placeholder="Aanvullende informatie bij deze offerte…"></textarea>
+
+    <label class="muted" style="font-weight:400;display:flex;align-items:center;gap:8px;margin-top:12px">
+      <input type="checkbox" name="save_default_addresses" value="1" style="width:auto"> Deze adressen opslaan als standaard voor de gekozen klant
+    </label>
+
+    <div class="actions" style="margin-top:16px"><button class="btn success">Offerte aanvragen ({{ cart_count }} product{{ '' if cart_count==1 else 'en' }})</button></div>
+  </form>
+</div>
+<script>
+function fillClient(){
+  var o=document.getElementById('clientSelect').selectedOptions[0]; if(!o) return;
+  var map={contactName:'contact-name',contactEmail:'contact-email',contactPhone:'contact-phone',deliveryAddr:'delivery',billingAddr:'billing'};
+  for(var id in map){var el=document.getElementById(id);var v=o.getAttribute('data-'+map[id])||'';if(v) el.value=v;}
+}
+function useDefault(which){
+  var o=document.getElementById('clientSelect').selectedOptions[0];
+  var v=o?o.getAttribute('data-'+which):''; if(!v){alert('Voor deze klant is nog geen standaard '+(which==='delivery'?'leveradres':'factuuradres')+' ingesteld.');return;}
+  document.getElementById(which==='delivery'?'deliveryAddr':'billingAddr').value=v;
+}
+function copyDelivery(){document.getElementById('billingAddr').value=document.getElementById('deliveryAddr').value;}
+window.addEventListener('DOMContentLoaded',function(){if(document.getElementById('clientSelect').value) fillClient();});
+</script>
+{% endif %}
+{% endblock %}
