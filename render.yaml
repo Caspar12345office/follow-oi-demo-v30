@@ -18,3 +18,6 @@ services:
         value: /var/data/follow_oi.db
       - key: FOLLOW_OI_UPLOAD_FOLDER
         value: /var/data/uploads
+      # Planning O-I bewaart zijn eigen database op dezelfde persistente schijf.
+      - key: PLANNING_OI_DB_PATH
+        value: /var/data/planning_oi.db

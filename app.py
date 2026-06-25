@@ -2255,5 +2255,9 @@ def invite(token):
 # Idempotent: maakt tabellen aan en seedt alleen wanneer leeg. Draait ook onder gunicorn (Render).
 init_db()
 
+# Planning O-I: zelfstandige planningsmodule (eigen database, rollen en login) onder /planning.
+from planning_oi import bp as planning_bp
+app.register_blueprint(planning_bp)
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=False)
