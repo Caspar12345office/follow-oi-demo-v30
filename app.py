@@ -187,7 +187,7 @@ def db():
 # Standaard huisstijl. Elke waarde is via het Vormgeving-paneel aan te passen en blijft bewaard.
 THEME_DEFAULTS = {
     "brand_name": "Follow O-I",
-    "brand_tagline": "Follow O-I portal",
+    "brand_tagline": "Inzicht in uw meubilair",
     "logo_path": "",
     "font_family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     "accent": "#0f3d3e",
