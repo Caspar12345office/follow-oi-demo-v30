@@ -1159,6 +1159,10 @@ def sales_contact():
 def handleiding():
     return render_template("handleiding.html")
 
+@app.route("/demo")
+def demo():
+    return render_template("demo.html")
+
 @app.route("/login", methods=["GET","POST"])
 def login():
     error = ""

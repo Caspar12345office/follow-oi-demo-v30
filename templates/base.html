@@ -52,7 +52,11 @@
         <a class="sub {{ 'active' if request.endpoint=='language_settings' }}" href="{{ url_for('language_settings') }}">Talen</a>
       </details>
       <a class="{{ 'active' if request.endpoint=='handleiding' }}" href="{{ url_for('handleiding') }}">Handleiding</a>
-      <a class="{{ 'active' if request.endpoint=='sales' }}" href="{{ url_for('sales') }}">Verkoop</a>
+      <details {% if request.endpoint in ['sales','demo'] %}open{% endif %}>
+        <summary>Verkoop</summary>
+        <a class="sub {{ 'active' if request.endpoint=='sales' }}" href="{{ url_for('sales') }}">Verkooppagina</a>
+        <a class="sub {{ 'active' if request.endpoint=='demo' }}" href="{{ url_for('demo') }}">Demovideo</a>
+      </details>
       <a href="{{ url_for('logout') }}">Uitloggen</a>
     </nav>
   </aside>
