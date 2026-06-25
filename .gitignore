@@ -24,4 +24,3 @@ Thumbs.db
 # Secrets & lokale tooling — NOOIT committen (Render gebruikt SECRET_KEY env var)
 .secret_key
 .claude/
-planning_oi.db
