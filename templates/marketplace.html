@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Circulaire marketplace
+{% block title %}Circulaire handelsomgeving
 <script>
 document.addEventListener('change', function(e){
   if(e.target.name === 'transport_option'){
@@ -53,12 +53,14 @@ document.addEventListener('change', function(e){
     <form method="post" action="{{ url_for('marketplace_reserve', asset_id=a.id) }}" class="card" style="padding:14px;margin:0;min-width:320px;box-shadow:none">
       <strong>Reserveren en vervoer kiezen</strong>
       <p class="muted" style="margin:6px 0 10px">Kies hoe dit item van locatie naar locatie gaat.</p>
-      <label style="font-weight:600"><input type="radio" name="transport_option" value="onderling_afstemmen" checked style="width:auto"> Onderling afstemmen</label>
-      <small class="muted" style="display:block;margin:-4px 0 8px 22px">Aanbieder en afnemer stemmen het vervoer zelf onderling af.</small>
-      <label style="font-weight:600"><input type="radio" name="transport_option" value="ophalen" style="width:auto"> Ophalen</label>
-      <small class="muted" style="display:block;margin:-4px 0 8px 22px">De afnemer haalt het item zelf op bij de aanbieder.</small>
-      <label style="font-weight:600"><input type="radio" name="transport_option" value="office_interior" style="width:auto"> Transportprijs aanvragen bij Follow O-I</label>
-      <small class="muted" style="display:block;margin:-4px 0 8px 22px">Dit is een prijsaanvraag, geen directe transportboeking.</small>
+      {% set opts = (a.marketplace_delivery_options or 'onderling_afstemmen,ophalen,office_interior').split(',') %}
+      {% set ns = namespace(first=true) %}
+      {% for key, label, desc in DELIVERY_OPTIONS if key in opts %}
+      <label style="font-weight:600"><input type="radio" name="transport_option" value="{{ key }}" {% if ns.first %}checked{% endif %} style="width:auto"> {{ label }}</label>
+      <small class="muted" style="display:block;margin:-4px 0 8px 22px">{{ desc }}</small>
+      {% set ns.first = false %}
+      {% endfor %}
+      {% if 'office_interior' in opts %}
       <div class="office-transport-fields" style="display:none;margin-top:10px;border-top:1px solid #e5e7eb;padding-top:10px">
         <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px;margin-bottom:10px">
           <strong>Prijsaanvraag verzenden</strong>
@@ -132,6 +134,7 @@ document.addEventListener('change', function(e){
         <label>Extra opmerkingen voor prijsaanvraag</label>
         <textarea name="transport_note" rows="3" placeholder="Bijv. gewenste datum, aantallen, demontage, bijzonderheden"></textarea>
       </div>
+      {% endif %}
       <button class="btn success reserve-button" style="margin-top:10px">Reserveren</button>
     </form>
     {% endif %}

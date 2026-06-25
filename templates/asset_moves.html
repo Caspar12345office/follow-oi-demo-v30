@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Verplaats meubilair{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Meubilair verplaatsen</h2>
+  <p class="muted">Registreer een verplaatsing. De huidige locatie van het meubilair wordt bijgewerkt en de verplaatsing komt in het logboek hieronder te staan.</p>
+  <form method="post">
+    <input type="hidden" name="action" value="move">
+    <div class="form-row">
+      <div style="grid-column:1/-1">
+        <label>Meubilair *</label>
+        <select name="asset_id" required>
+          <option value="">Kies een asset…</option>
+          {% for a in assets %}
+          <option value="{{ a.id }}">{{ a.asset_code }} · {{ a.category }} · {{ a.client_name }} (nu: {{ a.location or '-' }} {{ a.room or '' }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div><label>Nieuwe locatie</label><input name="to_location" placeholder="Bijv. Arnhem HQ"></div>
+      <div><label>Nieuwe ruimte</label><input name="to_room" placeholder="Bijv. 2.05"></div>
+      <div><label>Nieuwe verdieping</label><input name="to_floor"></div>
+      <div><label>Datum verplaatsing</label><input type="date" name="moved_at" value="{{ today }}"></div>
+      <div style="grid-column:1/-1"><label>Notitie</label><textarea name="note" rows="2" placeholder="Bijv. interne verhuizing, herplaatsing of projectfase"></textarea></div>
+    </div>
+    <div class="actions" style="margin-top:14px"><button class="btn">Verplaatsing registreren</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Verplaatslogboek</h2>
+  <table>
+    <tr><th>Datum</th><th>Asset</th><th>Klant</th><th>Van</th><th>Naar</th><th>Notitie</th><th>Door</th></tr>
+    {% for m in movements %}
+    <tr>
+      <td>{{ m.moved_at }}</td>
+      <td><a href="{{ url_for('asset_detail', asset_id=m.asset_id) }}"><strong>{{ m.asset_code }}</strong></a><br><span class="muted">{{ m.category }}</span></td>
+      <td>{{ m.client_name }}</td>
+      <td>{{ m.from_location or '-' }} · {{ m.from_floor or '-' }} · {{ m.from_room or '-' }}</td>
+      <td>{{ m.to_location or '-' }} · {{ m.to_floor or '-' }} · {{ m.to_room or '-' }}</td>
+      <td>{{ m.note or '-' }}</td>
+      <td>{{ m.created_by_name or '-' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="muted">Nog geen verplaatsingen geregistreerd.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

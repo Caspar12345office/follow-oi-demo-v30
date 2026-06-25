@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Scanners{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Zebra RFID-scanners</h2>
+  <p class="muted">Beheer hier de RFID-scanners van Zebra die jouw organisatie gebruikt en zie welke actief zijn.</p>
+  {% if integration_enabled %}
+  <div class="card" style="border-left:5px solid var(--success);margin:14px 0 0">
+    <strong>Live koppeling actief</strong>
+    <p class="muted" style="margin:6px 0 0">Scanners sturen hun tellingen rechtstreeks door naar Follow O-I.</p>
+  </div>
+  {% else %}
+  <div class="card" style="border-left:5px solid var(--warn);margin:14px 0 0">
+    <strong>Koppeling staat klaar — nog niet actief</strong>
+    <p class="muted" style="margin:6px 0 0">De technische koppeling met de Zebra-scanners is voorbereid en wordt later geactiveerd. Je kunt scanners nu al registreren en de status handmatig bijhouden. Zodra de koppeling live gaat, worden tellingen automatisch verwerkt.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid grid3">
+  <div class="card"><div class="muted">Geregistreerde scanners</div><div class="kpi">{{ scanners|length }}</div></div>
+  <div class="card"><div class="muted">Actief</div><div class="kpi">{{ active }}</div></div>
+  <div class="card"><div class="muted">Koppeling</div><div class="kpi" style="font-size:18px">{{ 'Live' if integration_enabled else 'Voorbereid' }}</div></div>
+</div>
+
+<div class="card">
+  <h3>Scanner toevoegen</h3>
+  <form method="post">
+    <input type="hidden" name="action" value="add">
+    <div class="form-row">
+      <div><label>Naam</label><input name="name" placeholder="Bijv. Ontvangst poort" required></div>
+      <div><label>Model</label><input name="model" placeholder="Bijv. Zebra FX9600"></div>
+      <div><label>Serienummer</label><input name="serial"></div>
+      <div><label>Locatie</label><input name="location" placeholder="Bijv. Arnhem HQ"></div>
+      <div><label>Type</label><select name="type"><option value="Handheld">Handheld</option><option value="Vaste poortlezer">Vaste poortlezer</option><option value="Sled">Sled / opzetstuk</option></select></div>
+    </div>
+    <div class="actions" style="margin-top:14px"><button class="btn">Scanner toevoegen</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Overzicht scanners</h3>
+  <table>
+    <tr><th>Status</th><th>Naam</th><th>Model</th><th>Type</th><th>Serienummer</th><th>Locatie</th><th>Laatst gezien</th><th>Acties</th></tr>
+    {% for s in scanners %}
+    <tr>
+      <td><span class="pill {% if s.status=='actief' %}green{% else %}gray{% endif %}">{{ s.status }}</span></td>
+      <td><strong>{{ s.name }}</strong></td>
+      <td>{{ s.model or '-' }}</td>
+      <td>{{ s.type or '-' }}</td>
+      <td>{{ s.serial or '-' }}</td>
+      <td>{{ s.location or '-' }}</td>
+      <td>{{ s.last_seen or '—' }}</td>
+      <td>
+        <div class="actions">
+          <form method="post" style="margin:0"><input type="hidden" name="action" value="toggle"><input type="hidden" name="scanner_id" value="{{ s.id }}"><button class="btn secondary">{{ 'Op inactief' if s.status=='actief' else 'Activeren' }}</button></form>
+          <form method="post" style="margin:0" onsubmit="return confirm('Scanner verwijderen?');"><input type="hidden" name="action" value="delete"><input type="hidden" name="scanner_id" value="{{ s.id }}"><button class="btn danger">Verwijderen</button></form>
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="muted">Nog geen scanners geregistreerd.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -2,16 +2,21 @@
 {% block title %}Huidig meubilair{% endblock %}
 {% block content %}
 <div class='card'>
-  <h2>Huidig meubilair</h2>
-  <div class='actions'>
-    <a class="btn" href="{{ url_for('asset_new') }}">Nieuw asset</a>
-    <a class="btn secondary" href="{{ url_for('marketplace') }}">Marketplace</a>
-    <a class="btn secondary" href="{{ url_for('marketplace_new') }}">Product plaatsen</a>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <div>
+      <h2 style="margin-bottom:4px">Huidig meubilair</h2>
+      <p class="muted" style="margin:0">{{ rows|length }} asset(s) geregistreerd.</p>
+    </div>
+    <div class='actions'>
+      <a class="btn" href="{{ url_for('asset_new') }}">Meubilair toevoegen</a>
+      <a class="btn secondary" href="{{ url_for('asset_moves') }}">Verplaatsen</a>
+      <a class="btn secondary" href="{{ url_for('assets_export') }}">Exporteer CSV</a>
+    </div>
   </div>
 </div>
 <div class='card'>
   <table>
-    <tr><th>Foto</th><th>Asset</th><th>Klant</th><th>Categorie</th><th>Locatie</th><th>Conditie</th><th>Uitgeleverd</th><th>Laatste service</th><th>Status</th><th>Marketplace</th></tr>
+    <tr><th>Foto</th><th>Asset</th><th>Klant</th><th>Categorie</th><th>Locatie</th><th>Conditie</th><th>Aanschafdatum</th><th>Laatste service</th><th>Status</th></tr>
     {% for r in rows %}
     <tr>
       <td>{% if r.photo_path %}<img src="{{ url_for('uploads', filename=r.photo_path) }}" style="width:54px;height:42px;object-fit:cover;border-radius:10px;border:1px solid var(--line)">{% else %}<span class="muted">Geen foto</span>{% endif %}</td>
@@ -23,8 +28,9 @@
       <td>{{ r.purchase_date or '-' }}</td>
       <td>{{ r.last_service or '-' }}</td>
       <td>{{ r.status }}</td>
-      <td><a class="btn secondary" href="{{ url_for('asset_marketplace_edit', asset_id=r.id) }}">{{ r.marketplace_status }}</a></td>
     </tr>
+    {% else %}
+    <tr><td colspan="9" class="muted">Nog geen meubilair geregistreerd. Voeg je eerste asset toe via "Meubilair toevoegen".</td></tr>
     {% endfor %}
   </table>
 </div>

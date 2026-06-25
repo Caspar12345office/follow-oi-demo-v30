@@ -1,17 +1,80 @@
 
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory, Response
 from werkzeug.utils import secure_filename
-import sqlite3, os, csv, io, secrets, random, html, smtplib
+from werkzeug.security import generate_password_hash, check_password_hash
+import sqlite3, os, csv, io, secrets, random, html, smtplib, json, re, urllib.request, urllib.error
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 
-DB_PATH = "follow_oi.db"
-UPLOAD_FOLDER = "uploads"
+
+def _load_secret_key():
+    # Productie: zet SECRET_KEY als environment variable (verplicht op Render).
+    env_key = os.environ.get("SECRET_KEY")
+    if env_key:
+        return env_key
+    # Lokaal: bewaar een gegenereerde sleutel zodat sessies een herstart overleven.
+    key_file = os.environ.get("FOLLOW_OI_SECRET_FILE", ".secret_key")
+    try:
+        if os.path.exists(key_file):
+            with open(key_file, "r", encoding="utf-8") as fh:
+                saved = fh.read().strip()
+                if saved:
+                    return saved
+        new_key = secrets.token_hex(32)
+        with open(key_file, "w", encoding="utf-8") as fh:
+            fh.write(new_key)
+        return new_key
+    except Exception:
+        return secrets.token_hex(32)
+
+
+DB_PATH = os.environ.get("FOLLOW_OI_DB_PATH", "follow_oi.db")
+UPLOAD_FOLDER = os.environ.get("FOLLOW_OI_UPLOAD_FOLDER", "uploads")
 
 app = Flask(__name__)
-app.secret_key = "change-this-secret-key"
+app.secret_key = _load_secret_key()
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def _seed_upload_assets():
+    # Gebundelde merk-assets (bijv. login-hero) naar de uploadmap kopiëren als ze
+    # ontbreken. Zo werkt de Render-demo ook op een lege persistente schijf.
+    seed_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "seed")
+    if not os.path.isdir(seed_dir):
+        return
+    for name in os.listdir(seed_dir):
+        dest = os.path.join(UPLOAD_FOLDER, name)
+        if not os.path.exists(dest):
+            try:
+                import shutil
+                shutil.copyfile(os.path.join(seed_dir, name), dest)
+            except Exception:
+                pass
+
+
+_seed_upload_assets()
+
+
+def hash_password(plain):
+    return generate_password_hash(plain)
+
+
+def password_is_hashed(stored):
+    # Werkzeug-hashes hebben de vorm "method$salt$hash" (bv. "pbkdf2:sha256:...$...$...").
+    return bool(stored) and "$" in stored and stored.split("$", 1)[0] != ""
+
+
+def verify_password(stored, provided):
+    if not stored:
+        return False
+    if password_is_hashed(stored):
+        try:
+            return check_password_hash(stored, provided)
+        except Exception:
+            return False
+    # Legacy plaintext-wachtwoord (oude database): vergelijk direct, upgrade volgt bij login.
+    return stored == provided
 
 ACCOUNT_REQUEST_EMAIL = os.environ.get("FOLLOW_OI_ACCOUNT_REQUEST_EMAIL", "caspar@office-interior.nl")
 
@@ -121,6 +184,279 @@ def db():
     return conn
 
 
+# Standaard huisstijl. Elke waarde is via het Vormgeving-paneel aan te passen en blijft bewaard.
+THEME_DEFAULTS = {
+    "brand_name": "Follow O-I",
+    "brand_tagline": "Follow O-I portal",
+    "logo_path": "",
+    "font_family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    "accent": "#0f3d3e",
+    "accent2": "#b88a44",
+    "bg": "#f6f3ee",
+    "panel": "#fffdf8",
+    "text": "#172033",
+    "muted": "#6b7280",
+    "line": "#e6ded2",
+    "soft": "#efe6d8",
+    "danger": "#ef4444",
+    "success": "#1f7a4d",
+    "warn": "#b88a44",
+}
+
+# Welke instellingen kleurkiezers zijn (de rest is tekst/lettertype/logo).
+THEME_COLOR_KEYS = ["accent", "accent2", "bg", "panel", "text", "muted", "line", "soft", "danger", "success", "warn"]
+
+# Vervoersopties die een aanbieder per advertentie kan aan- of uitzetten.
+DELIVERY_OPTIONS = [
+    ("onderling_afstemmen", "Onderling afstemmen", "Aanbieder en afnemer stemmen het vervoer zelf onderling af."),
+    ("ophalen", "Ophalen", "De afnemer haalt het item zelf op bij de aanbieder."),
+    ("office_interior", "Transportprijs aanvragen bij Follow O-I", "Dit is een prijsaanvraag, geen directe transportboeking."),
+]
+DELIVERY_OPTION_KEYS = [k for k, _, _ in DELIVERY_OPTIONS]
+
+
+# Benaderende coördinaten van NL-plaatsen om asset-locaties als stip op de kaart te tonen.
+NL_CITY_COORDS = {
+    "amsterdam": (52.3676, 4.9041), "rotterdam": (51.9244, 4.4777), "den haag": (52.0705, 4.3007),
+    "'s-gravenhage": (52.0705, 4.3007), "utrecht": (52.0907, 5.1214), "eindhoven": (51.4416, 5.4697),
+    "groningen": (53.2194, 6.5665), "tilburg": (51.5555, 5.0913), "almere": (52.3508, 5.2647),
+    "breda": (51.5719, 4.7683), "nijmegen": (51.8126, 5.8372), "apeldoorn": (52.2112, 5.9699),
+    "haarlem": (52.3874, 4.6462), "arnhem": (51.9851, 5.8987), "enschede": (52.2215, 6.8937),
+    "amersfoort": (52.1561, 5.3878), "zaanstad": (52.4389, 4.8244), "zaandam": (52.4389, 4.8244),
+    "'s-hertogenbosch": (51.6978, 5.3037), "den bosch": (51.6978, 5.3037), "haarlemmermeer": (52.3008, 4.6892),
+    "zwolle": (52.5168, 6.0830), "zoetermeer": (52.0575, 4.4937), "leeuwarden": (53.2012, 5.8086),
+    "leiden": (52.1601, 4.4970), "maastricht": (50.8514, 5.6910), "dordrecht": (51.8133, 4.6901),
+    "ede": (52.0402, 5.6649), "alphen aan den rijn": (52.1294, 4.6557), "alkmaar": (52.6324, 4.7534),
+    "emmen": (52.7850, 6.8977), "delft": (52.0116, 4.3571), "venlo": (51.3704, 6.1724),
+    "deventer": (52.2552, 6.1639), "helmond": (51.4793, 5.6570), "oss": (51.7650, 5.5180),
+    "amstelveen": (52.3114, 4.8701), "hilversum": (52.2292, 5.1669), "hengelo": (52.2659, 6.7930),
+    "purmerend": (52.5050, 4.9597), "roosendaal": (51.5306, 4.4654), "schiedam": (51.9192, 4.3886),
+    "spijkenisse": (51.8459, 4.3294), "almelo": (52.3568, 6.6625), "gouda": (52.0116, 4.7105),
+    "zaltbommel": (51.8067, 5.2469), "assen": (52.9925, 6.5649), "veenendaal": (52.0286, 5.5544),
+    "den helder": (52.9563, 4.7601), "hoorn": (52.6425, 5.0597), "capelle aan den ijssel": (51.9300, 4.5772),
+    "katwijk": (52.2036, 4.4007), "lelystad": (52.5185, 5.4714), "tiel": (51.8869, 5.4292),
+    "middelburg": (51.4988, 3.6109), "vlaardingen": (51.9121, 4.3419), "hardenberg": (52.5752, 6.6189),
+    "barneveld": (52.1399, 5.5844), "doetinchem": (51.9650, 6.2880), "woerden": (52.0857, 4.8836),
+    "kampen": (52.5550, 5.9111), "heerlen": (50.8882, 5.9795), "sittard": (51.0010, 5.8694),
+}
+
+
+def geocode_location(text):
+    if not text:
+        return None
+    t = text.lower()
+    # Langere namen eerst, zodat 'den bosch' niet als 'bosch' deel verkeerd matcht.
+    for city in sorted(NL_CITY_COORDS, key=len, reverse=True):
+        if city in t:
+            lat, lng = NL_CITY_COORDS[city]
+            return city, lat, lng
+    return None
+
+
+def build_map_points(conn):
+    rows = conn.execute("""SELECT a.location, c.name client_name, COUNT(*) cnt
+                           FROM assets a JOIN clients c ON c.id=a.client_id
+                           WHERE a.location IS NOT NULL AND a.location!=''
+                           GROUP BY a.location, c.name""").fetchall()
+    points = {}
+    unmatched = 0
+    for r in rows:
+        g = geocode_location(r["location"])
+        if not g:
+            unmatched += r["cnt"]
+            continue
+        city, lat, lng = g
+        p = points.setdefault(city, {"name": city.title(), "lat": lat, "lng": lng, "count": 0, "clients": set(), "locations": set()})
+        p["count"] += r["cnt"]
+        p["clients"].add(r["client_name"])
+        p["locations"].add(r["location"])
+    result = []
+    for p in points.values():
+        result.append({"name": p["name"], "lat": p["lat"], "lng": p["lng"], "count": p["count"],
+                        "clients": sorted(p["clients"]), "locations": sorted(p["locations"])})
+    result.sort(key=lambda x: x["count"], reverse=True)
+    return result, unmatched
+
+
+def clean_delivery_options(values):
+    """Filter ingestuurde opties op geldige keys; val terug op alles als niets is gekozen."""
+    chosen = [v for v in (values or []) if v in DELIVERY_OPTION_KEYS]
+    if not chosen:
+        chosen = list(DELIVERY_OPTION_KEYS)
+    # Behoud een vaste volgorde.
+    return ",".join([k for k in DELIVERY_OPTION_KEYS if k in chosen])
+
+
+def get_site_settings():
+    settings = dict(THEME_DEFAULTS)
+    try:
+        conn = db()
+        rows = conn.execute("SELECT key, value FROM site_settings").fetchall()
+        conn.close()
+        for r in rows:
+            if r["key"] in settings and r["value"] is not None:
+                settings[r["key"]] = r["value"]
+    except Exception:
+        pass
+    return settings
+
+
+def set_site_settings(values):
+    conn = db()
+    for key, value in values.items():
+        if key in THEME_DEFAULTS:
+            conn.execute(
+                "INSERT INTO site_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, value),
+            )
+    conn.commit()
+    conn.close()
+
+
+# ---- Shopify-koppeling -------------------------------------------------------
+# De configuratie wordt in de site_settings-tabel bewaard (los van de huisstijl),
+# zodat alles ook op de Render-demo via het instellingenscherm aanpasbaar is.
+SHOPIFY_KEYS = ("shopify_domain", "shopify_token", "shopify_api_version", "shopify_last_sync", "shopify_last_result")
+SHOPIFY_DEFAULT_API_VERSION = "2024-07"
+
+def get_shopify_config():
+    cfg = {"shopify_domain": "", "shopify_token": "", "shopify_api_version": SHOPIFY_DEFAULT_API_VERSION,
+           "shopify_last_sync": "", "shopify_last_result": ""}
+    try:
+        conn = db()
+        rows = conn.execute("SELECT key, value FROM site_settings WHERE key LIKE 'shopify_%'").fetchall()
+        conn.close()
+        for r in rows:
+            if r["key"] in cfg and r["value"] is not None:
+                cfg[r["key"]] = r["value"]
+    except Exception:
+        pass
+    if not cfg["shopify_api_version"]:
+        cfg["shopify_api_version"] = SHOPIFY_DEFAULT_API_VERSION
+    return cfg
+
+def set_shopify_config(values):
+    conn = db()
+    for key, value in values.items():
+        if key in SHOPIFY_KEYS:
+            conn.execute(
+                "INSERT INTO site_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                (key, value),
+            )
+    conn.commit()
+    conn.close()
+
+def _normalize_shop_domain(domain):
+    domain = (domain or "").strip().lower()
+    domain = domain.replace("https://", "").replace("http://", "").strip("/")
+    return domain
+
+def _strip_html(text):
+    if not text:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+def _shopify_request(domain, token, path, api_version):
+    """Doe een GET naar de Shopify Admin API. Geeft (data, next_page_info) terug.
+    next_page_info is None wanneer er geen volgende pagina is (cursor-paginatie)."""
+    url = f"https://{domain}/admin/api/{api_version}/{path}"
+    req = urllib.request.Request(url, headers={
+        "X-Shopify-Access-Token": token,
+        "Accept": "application/json",
+        "User-Agent": "Follow-OI/1.0",
+    })
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        link = resp.headers.get("Link", "") or ""
+    next_page_info = None
+    for part in link.split(","):
+        if 'rel="next"' in part:
+            m = re.search(r"[?&]page_info=([^&>]+)", part)
+            if m:
+                next_page_info = m.group(1)
+    return data, next_page_info
+
+def shopify_test_connection(domain, token, api_version):
+    domain = _normalize_shop_domain(domain)
+    if not domain or not token:
+        return False, "Vul zowel het Shopify-domein als de toegangstoken in."
+    try:
+        data, _ = _shopify_request(domain, token, "shop.json", api_version)
+        shop = data.get("shop", {})
+        return True, f"Verbonden met {shop.get('name', domain)} ({shop.get('myshopify_domain', domain)})."
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            return False, "Toegang geweigerd (401/403). Controleer de toegangstoken en de toegekende scopes (read_products)."
+        return False, f"Shopify gaf foutcode {e.code} terug. Controleer domein en API-versie."
+    except urllib.error.URLError as e:
+        return False, f"Kon Shopify niet bereiken: {e.reason}."
+    except Exception as e:
+        return False, f"Onverwachte fout: {e}"
+
+def shopify_sync_products():
+    cfg = get_shopify_config()
+    domain = _normalize_shop_domain(cfg["shopify_domain"])
+    token = cfg["shopify_token"]
+    api_version = cfg["shopify_api_version"] or SHOPIFY_DEFAULT_API_VERSION
+    if not domain or not token:
+        return False, "Vul eerst het Shopify-domein en de toegangstoken in en sla op."
+    created = updated = total = 0
+    conn = db()
+    path = "products.json?limit=250"
+    try:
+        while path:
+            data, next_page_info = _shopify_request(domain, token, path, api_version)
+            products = data.get("products", [])
+            total += len(products)
+            for p in products:
+                shopify_id = str(p.get("id"))
+                variants = p.get("variants") or []
+                first = variants[0] if variants else {}
+                sku = first.get("sku") or ""
+                price = first.get("price")
+                price_text = f"€ {price}" if price else ""
+                images = p.get("images") or []
+                image_url = (images[0].get("src") if images else "") or (p.get("image") or {}).get("src", "")
+                category = p.get("product_type") or (p.get("tags") or "").split(",")[0].strip()
+                handle = p.get("handle") or ""
+                source_url = f"https://{domain}/products/{handle}" if handle else ""
+                name = p.get("title") or "Naamloos product"
+                description = _strip_html(p.get("body_html"))
+                tags = p.get("tags") or ""
+                existing = conn.execute("SELECT id FROM products WHERE shopify_id=?", (shopify_id,)).fetchone()
+                if existing:
+                    conn.execute("""UPDATE products SET sku=?, name=?, category=?, description=?, price_text=?,
+                                    image_url=?, source_url=?, tags=?, active=1 WHERE id=?""",
+                                 (sku, name, category, description, price_text, image_url, source_url, tags, existing["id"]))
+                    updated += 1
+                else:
+                    conn.execute("""INSERT INTO products
+                                    (sku,name,category,description,price_text,image_url,source_url,tags,active,shopify_id,created_at)
+                                    VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                                 (sku, name, category, description, price_text, image_url, source_url, tags, 1, shopify_id, now()))
+                    created += 1
+            path = f"products.json?limit=250&page_info={next_page_info}" if next_page_info else None
+    except urllib.error.HTTPError as e:
+        conn.commit(); conn.close()
+        msg = "Toegang geweigerd. Controleer de token-scopes (read_products)." if e.code in (401, 403) else f"Shopify foutcode {e.code}."
+        return False, msg
+    except urllib.error.URLError as e:
+        conn.commit(); conn.close()
+        return False, f"Kon Shopify niet bereiken: {e.reason}."
+    except Exception as e:
+        conn.commit(); conn.close()
+        return False, f"Onverwachte fout bij ophalen: {e}"
+    conn.commit()
+    conn.close()
+    result = f"{total} producten opgehaald · {created} nieuw · {updated} bijgewerkt."
+    set_shopify_config({"shopify_last_sync": now(), "shopify_last_result": result})
+    return True, result
+
+
 PRODUCT_SEED = [
     ("OI-DESK-FUSE", "Elektrisch zit-sta bureau Fuse", "Zit-sta bureaus", "Elektrisch zit-sta bureau voor ergonomische werkplekken, flexplekken en hybride kantoren.", "Vanaf 344,85 incl. BTW", "", "https://office-interior.com/nl/products/elektrisch-zit-sta-bureau-fuse", "bureau,zit-sta,ergonomie,werkplek"),
     ("OI-CHAIR-ONYX", "Bureaustoel Renab Onyx - NPR 1813", "Bureaustoelen", "Ergonomische bureaustoel voor professionele werkplekken.", "363,00 incl. BTW", "", "https://office-interior.com/nl/products/bureaustoel-renab-onyx-npr-1813", "bureaustoel,ergonomie,npr,werkplek"),
@@ -164,6 +500,13 @@ def init_db():
 
 
     c.execute("""
+    CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    )
+    """)
+
+    c.execute("""
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         sku TEXT,
@@ -178,6 +521,11 @@ def init_db():
         created_at TEXT NOT NULL
     )
     """)
+    for sql in [
+        "ALTER TABLE products ADD COLUMN shopify_id TEXT",
+    ]:
+        try: c.execute(sql)
+        except Exception: pass
 
     c.execute("""
     CREATE TABLE IF NOT EXISTS users (
@@ -291,7 +639,8 @@ def init_db():
         "ALTER TABLE assets ADD COLUMN marketplace_reserved_by_user_id INTEGER",
         "ALTER TABLE assets ADD COLUMN marketplace_reserved_at TEXT",
         "ALTER TABLE assets ADD COLUMN photo_path TEXT",
-        "ALTER TABLE assets ADD COLUMN photo_note TEXT"
+        "ALTER TABLE assets ADD COLUMN photo_note TEXT",
+        "ALTER TABLE assets ADD COLUMN marketplace_delivery_options TEXT"
     ]:
         try: c.execute(sql)
         except Exception: pass
@@ -309,6 +658,20 @@ def init_db():
         note TEXT,
         moved_at TEXT NOT NULL,
         created_by_user_id INTEGER,
+        created_at TEXT NOT NULL
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS scanners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        model TEXT,
+        serial TEXT,
+        location TEXT,
+        type TEXT,
+        status TEXT NOT NULL DEFAULT 'inactief',
+        last_seen TEXT,
         created_at TEXT NOT NULL
     )
     """)
@@ -388,7 +751,7 @@ def init_db():
     if c.fetchone()["c"] == 0:
         c.execute("""INSERT INTO users (name,email,phone,role,password,active,email_verified,two_factor_enabled,created_at)
                      VALUES (?,?,?,?,?,?,?,?,?)""",
-                  ("Caspar Mastenbroek", "caspar@office-interior.nl", "0626983165", "admin", "ChangeMe123!", 1, 1, 1, now()))
+                  ("Caspar Mastenbroek", "caspar@office-interior.nl", "0626983165", "admin", hash_password("ChangeMe123!"), 1, 1, 1, now()))
 
     c.execute("SELECT COUNT(*) c FROM clients")
     if c.fetchone()["c"] == 0:
@@ -418,13 +781,15 @@ def init_db():
     ]
     for demo in demo_users:
         existing = c.execute("SELECT id FROM users WHERE email=?", (demo[1],)).fetchone()
+        demo_hashed = hash_password(demo[4])
         if existing:
             c.execute("UPDATE users SET name=?, role=?, password=?, active=1, email_verified=1, two_factor_enabled=? WHERE email=?",
-                      (demo[0], demo[3], demo[4], demo[7], demo[1]))
+                      (demo[0], demo[3], demo_hashed, demo[7], demo[1]))
             demo_id = existing["id"]
         else:
             c.execute("""INSERT INTO users (name,email,phone,role,password,active,email_verified,two_factor_enabled,created_at)
-                         VALUES (?,?,?,?,?,?,?,?,?)""", demo)
+                         VALUES (?,?,?,?,?,?,?,?,?)""",
+                      (demo[0], demo[1], demo[2], demo[3], demo_hashed, demo[5], demo[6], demo[7], demo[8]))
             demo_id = c.lastrowid
         for perm in PERMISSION_KEYS:
             c.execute("INSERT OR IGNORE INTO user_permissions (user_id, permission) VALUES (?,?)", (demo_id, perm))
@@ -435,6 +800,17 @@ def init_db():
         if cnt == 0:
             for p in PERMISSION_KEYS:
                 c.execute("INSERT OR IGNORE INTO user_permissions (user_id, permission) VALUES (?,?)", (admin["id"], p))
+
+    # Demo Zebra RFID-scanners. De koppeling staat klaar maar wordt later pas live gezet.
+    if c.execute("SELECT COUNT(*) c FROM scanners").fetchone()["c"] == 0:
+        scanner_seed = [
+            ("Ontvangst poort", "Zebra FX9600", "FX96-23A1-0098", "Arnhem HQ", "Vaste poortlezer", "inactief", None),
+            ("Magazijn handscanner", "Zebra RFD40", "RFD40-77C2-0451", "Arnhem HQ", "Handheld", "inactief", None),
+            ("Inventarisatie mobiel", "Zebra MC3390R", "MC33R-12B8-0007", "Nijmegen depot", "Handheld", "inactief", None),
+        ]
+        for s in scanner_seed:
+            c.execute("""INSERT INTO scanners (name,model,serial,location,type,status,last_seen,created_at)
+                         VALUES (?,?,?,?,?,?,?,?)""", (*s, now()))
     conn.commit()
     conn.close()
     seed_products()
@@ -454,7 +830,7 @@ LANGUAGES = {"nl": "Nederlands", "en": "English"}
 
 @app.context_processor
 def inject():
-    return {"user": current_user(), "has_perm": has_perm, "PERMISSION_KEYS": PERMISSION_KEYS, "LANGUAGES": LANGUAGES}
+    return {"user": current_user(), "has_perm": has_perm, "PERMISSION_KEYS": PERMISSION_KEYS, "LANGUAGES": LANGUAGES, "settings": get_site_settings(), "DELIVERY_OPTIONS": DELIVERY_OPTIONS}
 
 @app.route("/settings/language", methods=["GET","POST"])
 def language_settings():
@@ -471,6 +847,74 @@ def language_settings():
     return render_template("language_settings.html", saved=saved)
 
 
+# De daadwerkelijke koppeling met de Zebra-scanners staat klaar maar wordt later pas geactiveerd.
+SCANNER_INTEGRATION_ENABLED = False
+
+@app.route("/settings/scanners", methods=["GET","POST"])
+def scanners():
+    if not require_login(): return redirect(url_for("login"))
+    if current_user()["role"] != "admin": return redirect(url_for("dashboard"))
+    conn = db()
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add":
+            conn.execute("""INSERT INTO scanners (name,model,serial,location,type,status,created_at)
+                            VALUES (?,?,?,?,?,?,?)""",
+                         (request.form.get("name") or "Naamloze scanner", request.form.get("model"),
+                          request.form.get("serial"), request.form.get("location"),
+                          request.form.get("type") or "Handheld", "inactief", now()))
+            conn.commit()
+        elif action == "toggle":
+            sc = conn.execute("SELECT * FROM scanners WHERE id=?", (request.form.get("scanner_id"),)).fetchone()
+            if sc:
+                new_status = "actief" if sc["status"] != "actief" else "inactief"
+                last_seen = now() if new_status == "actief" else sc["last_seen"]
+                conn.execute("UPDATE scanners SET status=?, last_seen=? WHERE id=?", (new_status, last_seen, sc["id"]))
+                conn.commit()
+        elif action == "delete":
+            conn.execute("DELETE FROM scanners WHERE id=?", (request.form.get("scanner_id"),))
+            conn.commit()
+        conn.close()
+        return redirect(url_for("scanners"))
+    rows = conn.execute("SELECT * FROM scanners ORDER BY status DESC, name").fetchall()
+    active = sum(1 for r in rows if r["status"] == "actief")
+    conn.close()
+    return render_template("scanners.html", scanners=rows, active=active,
+                           integration_enabled=SCANNER_INTEGRATION_ENABLED)
+
+
+@app.route("/settings/shopify", methods=["GET","POST"])
+def shopify_settings():
+    if not require_login(): return redirect(url_for("login"))
+    if current_user()["role"] != "admin": return redirect(url_for("dashboard"))
+    message = ""; ok = None
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "save":
+            updates = {
+                "shopify_domain": _normalize_shop_domain(request.form.get("shopify_domain")),
+                "shopify_api_version": (request.form.get("shopify_api_version") or SHOPIFY_DEFAULT_API_VERSION).strip(),
+            }
+            # Token alleen overschrijven als er een nieuwe is ingevuld (anders niet wissen).
+            new_token = (request.form.get("shopify_token") or "").strip()
+            if new_token:
+                updates["shopify_token"] = new_token
+            set_shopify_config(updates)
+            ok, message = True, "Instellingen opgeslagen."
+        elif action == "test":
+            cfg = get_shopify_config()
+            ok, message = shopify_test_connection(cfg["shopify_domain"], cfg["shopify_token"], cfg["shopify_api_version"])
+        elif action == "sync":
+            ok, message = shopify_sync_products()
+    cfg = get_shopify_config()
+    conn = db()
+    product_count = conn.execute("SELECT COUNT(*) c FROM products WHERE active=1").fetchone()["c"]
+    shopify_count = conn.execute("SELECT COUNT(*) c FROM products WHERE shopify_id IS NOT NULL").fetchone()["c"]
+    conn.close()
+    has_token = bool(cfg["shopify_token"])
+    return render_template("shopify.html", cfg=cfg, message=message, ok=ok,
+                           has_token=has_token, product_count=product_count, shopify_count=shopify_count)
+
 
 EN_TRANSLATIONS = {
     "Follow O-I portal": "Follow O-I portal",
@@ -478,7 +922,7 @@ EN_TRANSLATIONS = {
     "Klanten": "Clients",
     "Meubilair": "Furniture",
     "Huidig meubilair": "Current furniture",
-    "Circulaire marketplace": "Circular marketplace",
+    "Circulaire handelsomgeving": "Circular trading hub",
     "Productcatalogus": "Product catalogue",
     "Offertes": "Quotations",
     "Offerteoverzicht": "Quotation overview",
@@ -598,7 +1042,10 @@ def login():
             locked = parse_dt(user["locked_until"])
             if locked and locked > datetime.now():
                 conn.close(); return render_template("login.html", error="Account tijdelijk geblokkeerd. Probeer later opnieuw.")
-        if user and user["password"] == password:
+        if user and verify_password(user["password"], password):
+            # Migreer legacy plaintext-wachtwoorden transparant naar een hash bij eerste login.
+            if not password_is_hashed(user["password"]):
+                conn.execute("UPDATE users SET password=? WHERE id=?", (hash_password(password), user["id"]))
             conn.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=?", (user["id"],)); conn.commit(); conn.close()
             if not user["email_verified"]:
                 return render_template("login.html", error="Bevestig eerst je e-mailadres via de uitnodigingslink.")
@@ -680,8 +1127,10 @@ def dashboard():
         GROUP BY category ORDER BY count DESC LIMIT 6
     """).fetchall()
     location_count = conn.execute("SELECT COUNT(DISTINCT location) c FROM assets WHERE location IS NOT NULL AND location!=''").fetchone()["c"]
+    map_points, map_unmatched = build_map_points(conn)
     conn.close()
-    return render_template("dashboard.html", stats=stats, recent=recent, category_summary=category_summary, location_count=location_count)
+    return render_template("dashboard.html", stats=stats, recent=recent, category_summary=category_summary,
+                           location_count=location_count, map_points=map_points, map_unmatched=map_unmatched)
 
 @app.route("/clients")
 def clients():
@@ -736,7 +1185,27 @@ def assets():
     rows = conn.execute("""SELECT a.*, c.name client_name FROM assets a JOIN clients c ON c.id=a.client_id
                            ORDER BY c.name, a.asset_code""").fetchall()
     conn.close()
-    return render_template("assets.html", assets=rows)
+    return render_template("assets.html", rows=rows)
+
+@app.route("/assets/export.csv")
+def assets_export():
+    blocked = require_perm("view_assets")
+    if blocked: return blocked
+    conn = db()
+    rows = conn.execute("""SELECT a.*, c.name client_name FROM assets a JOIN clients c ON c.id=a.client_id
+                           ORDER BY c.name, a.asset_code""").fetchall()
+    conn.close()
+    out = io.StringIO()
+    w = csv.writer(out, delimiter=";")
+    w.writerow(["Assetcode","RFID","Klant","Categorie","Merk","Model","Locatie","Ruimte","Verdieping",
+                "Status","Conditie","Aanschafdatum","Laatste service"])
+    for r in rows:
+        w.writerow([r["asset_code"], r["rfid"], r["client_name"], r["category"], r["brand"] or "", r["model"] or "",
+                    r["location"] or "", r["room"] or "", r["floor"] or "", r["status"] or "",
+                    r["condition_score"] or "", r["purchase_date"] or "", r["last_service"] or ""])
+    filename = f"follow-oi-meubilair-{datetime.now().strftime('%Y%m%d')}.csv"
+    return Response("﻿" + out.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"})
 
 @app.route("/assets/<int:asset_id>", methods=["GET","POST"])
 def asset_detail(asset_id):
@@ -797,8 +1266,11 @@ def asset_new():
     if request.method == "POST":
         client_id = request.form["client_id"]
         client_name = conn.execute("SELECT name FROM clients WHERE id=?", (client_id,)).fetchone()["name"]
-        asset_code = request.form["asset_code"]
-        rfid = request.form.get("rfid") or make_rfid(client_name, asset_code)
+        asset_code = (request.form.get("asset_code") or "").strip()
+        if not asset_code:
+            client_code = "".join([ch for ch in client_name.upper() if ch.isalnum()])[:4] or "OI"
+            asset_code = f"OI-{client_code}-{secrets.token_hex(3).upper()}"
+        rfid = (request.form.get("rfid") or "").strip() or make_rfid(client_name, asset_code)
         conn.execute("""INSERT INTO assets
                         (client_id,asset_code,rfid,category,brand,model,location,room,floor,status,condition_score,purchase_date,circular_source,co2_kg,material_kg,cost_saving_eur,last_service,created_at)
                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
@@ -812,6 +1284,42 @@ def asset_new():
     conn.close()
     return render_template("asset_form.html", clients=clients)
 
+
+@app.route("/assets/moves", methods=["GET","POST"])
+def asset_moves():
+    blocked = require_perm("edit_assets")
+    if blocked: return blocked
+    conn = db()
+    if request.method == "POST":
+        asset_id = request.form.get("asset_id")
+        asset = conn.execute("SELECT * FROM assets WHERE id=?", (asset_id,)).fetchone()
+        if asset:
+            to_location = request.form.get("to_location")
+            to_room = request.form.get("to_room")
+            to_floor = request.form.get("to_floor")
+            note = request.form.get("note")
+            conn.execute("""INSERT INTO asset_movements
+                            (asset_id,from_location,from_room,from_floor,to_location,to_room,to_floor,note,moved_at,created_by_user_id,created_at)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                         (asset["id"], asset["location"], asset["room"], asset["floor"],
+                          to_location, to_room, to_floor, note, request.form.get("moved_at") or today(),
+                          session.get("user_id"), now()))
+            conn.execute("UPDATE assets SET location=?, room=?, floor=? WHERE id=?", (to_location, to_room, to_floor, asset["id"]))
+            conn.commit()
+            log_event(session.get("user_id"), "ASSET_MOVE", f"Asset {asset['id']} verplaatst via verplaatslog")
+        conn.close()
+        return redirect(url_for("asset_moves"))
+    assets = conn.execute("""SELECT a.id, a.asset_code, a.category, a.location, a.room, a.floor, c.name client_name
+                             FROM assets a JOIN clients c ON c.id=a.client_id
+                             ORDER BY c.name, a.asset_code""").fetchall()
+    movements = conn.execute("""SELECT m.*, a.asset_code, a.category, c.name client_name, u.name created_by_name
+                                FROM asset_movements m
+                                JOIN assets a ON a.id=m.asset_id
+                                JOIN clients c ON c.id=a.client_id
+                                LEFT JOIN users u ON u.id=m.created_by_user_id
+                                ORDER BY m.moved_at DESC, m.id DESC""").fetchall()
+    conn.close()
+    return render_template("asset_moves.html", assets=assets, movements=movements, today=today())
 
 
 @app.route("/marketplace")
@@ -855,7 +1363,7 @@ def marketplace_new():
     if request.method == "POST":
         client_id = request.form["client_id"]
         client_name = conn.execute("SELECT name FROM clients WHERE id=?", (client_id,)).fetchone()["name"]
-        asset_code = f"OI-MP-{int(datetime.now().timestamp())}"
+        asset_code = f"OI-MP-{int(datetime.now().timestamp())}-{secrets.token_hex(2).upper()}"
         rfid = request.form.get("rfid") or make_rfid(client_name, asset_code)
 
         photo_path = None
@@ -865,14 +1373,15 @@ def marketplace_new():
             photo_path = f"marketplace_{int(datetime.now().timestamp())}_{safe}"
             photo.save(os.path.join(UPLOAD_FOLDER, photo_path))
 
+        delivery = clean_delivery_options(request.form.getlist("delivery_options"))
         conn.execute("""INSERT INTO assets
-                        (client_id,asset_code,rfid,category,brand,model,location,room,floor,status,condition_score,purchase_date,circular_source,co2_kg,material_kg,cost_saving_eur,last_service,marketplace_status,marketplace_note,marketplace_available_from,photo_path,created_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        (client_id,asset_code,rfid,category,brand,model,location,room,floor,status,condition_score,purchase_date,circular_source,co2_kg,material_kg,cost_saving_eur,last_service,marketplace_status,marketplace_note,marketplace_available_from,marketplace_delivery_options,photo_path,created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                      (client_id, asset_code, rfid, request.form["category"], request.form.get("brand"), request.form.get("model"),
                       request.form.get("location"), request.form.get("room"), request.form.get("floor"), "beschikbaar voor hergebruik",
                       request.form.get("condition_score") or 4, request.form.get("purchase_date"), "herplaatsing",
                       0, 0, 0,
-                      today(), "beschikbaar", request.form.get("marketplace_note"), request.form.get("marketplace_available_from") or today(), photo_path, now()))
+                      today(), "beschikbaar", request.form.get("marketplace_note"), request.form.get("marketplace_available_from") or today(), delivery, photo_path, now()))
         conn.commit()
         log_event(session.get("user_id"), "MARKETPLACE_CREATE", f"Nieuw marketplace item {asset_code}")
         conn.close()
@@ -898,12 +1407,14 @@ def asset_marketplace_edit(asset_id):
         if marketplace_status == "gereserveerd":
             reserved_by = asset["marketplace_reserved_by_user_id"] or session.get("user_id")
             reserved_at = asset["marketplace_reserved_at"] or now()
+        delivery = clean_delivery_options(request.form.getlist("delivery_options"))
         conn.execute("""UPDATE assets
                         SET marketplace_status=?, marketplace_note=?, marketplace_available_from=?,
+                            marketplace_delivery_options=?,
                             marketplace_reserved_by_user_id=?, marketplace_reserved_at=?
                         WHERE id=?""",
                      (marketplace_status, request.form.get("marketplace_note"), request.form.get("marketplace_available_from"),
-                      reserved_by, reserved_at, asset_id))
+                      delivery, reserved_by, reserved_at, asset_id))
         conn.commit(); conn.close()
         log_event(session.get("user_id"), "MARKETPLACE_UPDATE", f"Asset {asset_id} status {marketplace_status}")
         return redirect(url_for("assets"))
@@ -944,7 +1455,7 @@ def marketplace_reserve(asset_id):
         pickup = request.form.get("transport_from") or f"{asset['location'] or ''} {asset['room'] or ''}".strip()
         delivery = request.form.get("transport_to") or "Nog te bepalen"
         message = "\n".join([
-            "Er is via de circulaire marketplace een transportprijsaanvraag verzonden naar Follow O-I.",
+            "Er is via de circulaire handelsomgeving een transportprijsaanvraag verzonden naar Follow O-I.",
             "Dit is geen directe transportboeking. Graag de aanvraag beoordelen en de prijsopgave per e-mail beantwoorden aan de aanvrager.",
             "Transport wordt pas ingepland na akkoord op de offerte.",
             "",
@@ -1265,6 +1776,35 @@ def uploads(filename):
     if not require_login(): return redirect(url_for("login"))
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=False)
 
+@app.route("/branding", methods=["GET","POST"])
+def branding():
+    if not require_login(): return redirect(url_for("login"))
+    if current_user()["role"] != "admin": return redirect(url_for("dashboard"))
+    saved = False
+    if request.method == "POST":
+        if request.form.get("reset") == "1":
+            conn = db(); conn.execute("DELETE FROM site_settings"); conn.commit(); conn.close()
+            return redirect(url_for("branding"))
+        values = {}
+        for key in THEME_COLOR_KEYS:
+            v = (request.form.get(key) or "").strip()
+            if v:
+                values[key] = v
+        for key in ("brand_name", "brand_tagline", "font_family"):
+            values[key] = (request.form.get(key) or "").strip() or THEME_DEFAULTS[key]
+        logo = request.files.get("logo")
+        if logo and logo.filename:
+            safe = secure_filename(logo.filename)
+            stored = f"logo_{int(datetime.now().timestamp())}_{safe}"
+            logo.save(os.path.join(UPLOAD_FOLDER, stored))
+            values["logo_path"] = stored
+        if request.form.get("remove_logo") == "1":
+            values["logo_path"] = ""
+        set_site_settings(values)
+        log_event(current_user()["id"], "BRANDING_UPDATED", "Vormgeving aangepast")
+        saved = True
+    return render_template("branding.html", settings=get_site_settings(), defaults=THEME_DEFAULTS, color_keys=THEME_COLOR_KEYS, saved=saved)
+
 @app.route("/impact")
 def impact():
     blocked = require_perm("view_impact")
@@ -1379,7 +1919,7 @@ def user_new():
         selected_permissions = request.form.getlist("permissions") or ROLE_DEFAULTS.get(role, [])
         conn.execute("""INSERT INTO users (name,email,phone,role,password,active,email_verified,two_factor_enabled,invite_token,created_at)
                         VALUES (?,?,?,?,?,?,?,?,?,?)""",
-                     (request.form["name"], request.form["email"].strip().lower(), request.form.get("phone"), role, temp, 0, 0, 1, token, now()))
+                     (request.form["name"], request.form["email"].strip().lower(), request.form.get("phone"), role, hash_password(temp), 0, 0, 1, token, now()))
         user_id = conn.execute("SELECT last_insert_rowid() id").fetchone()["id"]
         conn.commit(); conn.close()
         set_permissions(user_id, selected_permissions)
@@ -1419,12 +1959,14 @@ def invite(token):
         elif p1 != p2:
             error = "Wachtwoorden zijn niet gelijk."
         else:
-            conn.execute("UPDATE users SET password=?, active=1, email_verified=1, two_factor_enabled=1, invite_token=NULL WHERE id=?", (p1, invited["id"]))
+            conn.execute("UPDATE users SET password=?, active=1, email_verified=1, two_factor_enabled=1, invite_token=NULL WHERE id=?", (hash_password(p1), invited["id"]))
             conn.commit(); conn.close()
             return render_template("invite.html", success=True)
     conn.close()
     return render_template("invite.html", invite_user=invited, error=error)
 
+# Idempotent: maakt tabellen aan en seedt alleen wanneer leeg. Draait ook onder gunicorn (Render).
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     app.run(host="127.0.0.1", port=5000, debug=False)

@@ -3,44 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Follow O-I</title>
+  <title>{{ settings.brand_name }}</title>
   <style>
-    :root{--accent:#0f3d3e;--accent2:#b88a44;--bg:#f6f3ee;--panel:#fffdf8;--text:#172033;--muted:#6b7280;--line:#e6ded2;--soft:#efe6d8;--danger:#ef4444;--success:#1f7a4d;--warn:#b88a44}
-    *{box-sizing:border-box} body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    a{color:inherit;text-decoration:none}.layout{display:flex;min-height:100vh}.side{width:270px;background:linear-gradient(180deg,#fffdf8 0%,#f1e7d8 100%);border-right:1px solid var(--line);padding:22px;position:sticky;top:0;height:100vh;overflow:auto}.brand{font-weight:900;font-size:22px;margin-bottom:4px;color:var(--accent)}.tag{color:var(--muted);font-size:12px;margin-bottom:24px}.nav-title{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 8px 6px}.nav a{display:block;padding:10px 12px;margin:3px 0;border-radius:12px;color:var(--muted)}.nav a.sub{padding-left:26px;font-size:14px}.nav details{margin:3px 0}.nav summary{list-style:none;cursor:pointer;padding:10px 12px;border-radius:12px;color:var(--muted);font-weight:700}.nav summary::-webkit-details-marker{display:none}.nav summary:before{content:'▶';display:inline-block;width:18px;color:var(--accent2)}.nav details[open] summary:before{content:'▼'}.nav details[open] summary,.nav summary:hover{background:var(--soft);color:var(--accent)}.nav a:hover,.nav a.active{background:var(--soft);color:var(--accent);font-weight:700}.main{flex:1;padding:28px;max-width:1400px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:0 8px 28px rgba(15,23,42,.04)}h1{margin:0 0 8px;font-size:30px}h2{margin:0 0 16px}.muted{color:var(--muted)}.grid{display:grid;gap:16px}.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{font-size:28px;font-weight:800;color:var(--accent)}.contact-card{background:linear-gradient(135deg,var(--accent),#176568);color:#fff}.contact-card .muted{color:#efe6d8}.contact-card a{color:#fff;text-decoration:underline}.oi-line{height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;margin:10px 0 18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.btn{display:inline-block;border:0;background:var(--accent);color:white;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(15,61,62,.14)}.btn.secondary{background:var(--soft);color:var(--accent)}.btn.danger{background:var(--danger)}.btn.success{background:var(--success)}input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text)}label{display:block;font-weight:700;margin:10px 0 6px}.form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:var(--soft);color:var(--accent);padding:6px 10px;font-weight:700;font-size:12px}.pill.green{background:#dcfce7;color:#15803d}.pill.orange{background:#ffedd5;color:#c2410c}.pill.gray{background:#e5e7eb;color:#374151}.market-card{display:grid;grid-template-columns:1fr auto;gap:18px}.asset-title{font-size:18px;font-weight:800}.actions{display:flex;gap:8px;flex-wrap:wrap}.flash{background:#dcfce7;color:#166534;border-radius:12px;padding:10px 12px;margin-bottom:14px}@media(max-width:900px){.layout{display:block}.side{position:relative;width:100%;height:auto}.grid4,.grid3,.grid2,.form-row{grid-template-columns:1fr}.main{padding:18px}.market-card{grid-template-columns:1fr}}
+    @font-face{font-family:'Jost';font-style:normal;font-weight:100 900;font-display:swap;src:url("{{ url_for('static', filename='fonts/jost-latin.woff2') }}") format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+    @font-face{font-family:'Jost';font-style:normal;font-weight:100 900;font-display:swap;src:url("{{ url_for('static', filename='fonts/jost-latin-ext.woff2') }}") format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+    :root{--accent:{{ settings.accent }};--accent2:{{ settings.accent2 }};--bg:{{ settings.bg }};--panel:{{ settings.panel }};--text:{{ settings.text }};--muted:{{ settings.muted }};--line:{{ settings.line }};--soft:{{ settings.soft }};--danger:{{ settings.danger }};--success:{{ settings.success }};--warn:{{ settings.warn }};--font:{{ settings.font_family }}}
+    *{box-sizing:border-box} body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text)}
+    a{color:inherit;text-decoration:none}.layout{display:flex;min-height:100vh}.side{width:270px;background:linear-gradient(180deg,#fffdf8 0%,#f1e7d8 100%);border-right:1px solid var(--line);padding:22px;position:sticky;top:0;height:100vh;overflow:auto}.brand{font-weight:500;font-size:20px;margin-bottom:4px;color:var(--accent);text-transform:uppercase;letter-spacing:.22em}.tag{color:var(--muted);font-size:12px;margin-bottom:24px}.nav-title{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 8px 6px}.nav a{display:block;padding:10px 12px;margin:3px 0;border-radius:12px;color:var(--muted)}.nav a.sub{padding-left:26px;font-size:14px}.nav details{margin:3px 0}.nav summary{list-style:none;cursor:pointer;padding:10px 12px;border-radius:12px;color:var(--muted);font-weight:700}.nav summary::-webkit-details-marker{display:none}.nav summary:before{content:'▶';display:inline-block;width:18px;color:var(--accent2)}.nav details[open] summary:before{content:'▼'}.nav details[open] summary,.nav summary:hover{background:var(--soft);color:var(--accent)}.nav a:hover,.nav a.active{background:var(--soft);color:var(--accent);font-weight:700}.main{flex:1;padding:28px;max-width:1400px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:0 8px 28px rgba(15,23,42,.04)}h1{margin:0 0 8px;font-size:30px}h2{margin:0 0 16px}.muted{color:var(--muted)}.grid{display:grid;gap:16px}.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{font-size:28px;font-weight:800;color:var(--accent)}.contact-card{background:linear-gradient(135deg,var(--accent),#176568);color:#fff}.contact-card .muted{color:#efe6d8}.contact-card a{color:#fff;text-decoration:underline}.oi-line{height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;margin:10px 0 18px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.btn{display:inline-block;border:0;background:var(--accent);color:white;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(15,61,62,.14)}.btn.secondary{background:var(--soft);color:var(--accent)}.btn.danger{background:var(--danger)}.btn.success{background:var(--success)}input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text)}label{display:block;font-weight:700;margin:10px 0 6px}.form-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:var(--soft);color:var(--accent);padding:6px 10px;font-weight:700;font-size:12px}.pill.green{background:#dcfce7;color:#15803d}.pill.orange{background:#ffedd5;color:#c2410c}.pill.gray{background:#e5e7eb;color:#374151}.market-card{display:grid;grid-template-columns:1fr auto;gap:18px}.asset-title{font-size:18px;font-weight:800}.actions{display:flex;gap:8px;flex-wrap:wrap}.flash{background:#dcfce7;color:#166534;border-radius:12px;padding:10px 12px;margin-bottom:14px}@media(max-width:900px){.layout{display:block}.side{position:relative;width:100%;height:auto}.grid4,.grid3,.grid2,.form-row{grid-template-columns:1fr}.main{padding:18px}.market-card{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 {% if user %}
 <div class="layout">
   <aside class="side">
-    <div class="brand">Follow O-I</div><div class="tag">Follow O-I portal</div>
+    {% if settings.logo_path %}<img src="{{ url_for('uploads', filename=settings.logo_path) }}" alt="{{ settings.brand_name }}" style="max-width:180px;max-height:70px;margin-bottom:8px">{% endif %}
+    <div class="brand">{{ settings.brand_name }}</div><div class="tag">{{ settings.brand_tagline }}</div>
     <nav class="nav">
       <a href="{{ url_for('dashboard') }}">Dashboard</a>
       {% if has_perm('view_clients') %}<a href="{{ url_for('clients') }}">Klanten</a>{% endif %}
-      <details open>
+      <details>
         <summary>Meubilair</summary>
         {% if has_perm('view_assets') %}<a class="sub" href="{{ url_for('assets') }}">Huidig meubilair</a>{% endif %}
-        {% if has_perm('view_marketplace') %}<a class="sub" href="{{ url_for('marketplace') }}">Circulaire marketplace</a>{% endif %}
+        {% if has_perm('edit_assets') %}<a class="sub" href="{{ url_for('asset_moves') }}">Verplaats meubilair</a>{% endif %}
+        {% if has_perm('view_marketplace') %}<a class="sub" href="{{ url_for('marketplace') }}">Circulaire handelsomgeving</a>{% endif %}
         <a class="sub" href="{{ url_for('products') }}">Productcatalogus</a>
       </details>
-      <details open>
+      <details>
         <summary>Offertes</summary>
-        {% if has_perm('view_orders') %}<a class="sub" href="{{ url_for('orders') }}">Offerteoverzicht</a>{% endif %}
         {% if has_perm('edit_orders') %}<a class="sub" href="{{ url_for('order_new') }}">Offerte aanvragen</a>{% endif %}
+        {% if has_perm('view_orders') %}<a class="sub" href="{{ url_for('orders') }}">Offerteoverzicht</a>{% endif %}
       </details>
-      <details open>
+      <details>
         <summary>Tickets</summary>
-        <a class="sub" href="{{ url_for('tickets') }}">Ticketoverzicht</a>
         <a class="sub" href="{{ url_for('ticket_new') }}">Ticket aanmaken</a>
+        <a class="sub" href="{{ url_for('tickets') }}">Ticketoverzicht</a>
         {% if has_perm('view_damages') %}<a class="sub" href="{{ url_for('damages') }}">Schade melden</a>{% endif %}
       </details>
       {% if has_perm('view_documents') %}<a href="{{ url_for('documents') }}">Documenten</a>{% endif %}
       {% if has_perm('view_impact') %}<a href="{{ url_for('impact') }}">Impact</a>{% endif %}
       {% if has_perm('view_rfid') %}<a href="{{ url_for('rfid') }}">RFID</a>{% endif %}
       {% if has_perm('view_emvi') %}<a href="{{ url_for('emvi') }}">EMVI</a>{% endif %}
-      {% if has_perm('manage_users') %}<a href="{{ url_for('users') }}">Gebruikers</a>{% endif %}
-      <a href="{{ url_for('language_settings') }}">Talen</a>
+      <details>
+        <summary>Instellingen</summary>
+        {% if has_perm('manage_users') %}<a class="sub" href="{{ url_for('users') }}">Gebruikers</a>{% endif %}
+        {% if user.role == 'admin' %}<a class="sub" href="{{ url_for('branding') }}">Vormgeving</a>{% endif %}
+        {% if user.role == 'admin' %}<a class="sub" href="{{ url_for('scanners') }}">Scanners</a>{% endif %}
+        {% if user.role == 'admin' %}<a class="sub" href="{{ url_for('shopify_settings') }}">Shopify</a>{% endif %}
+        <a class="sub" href="{{ url_for('language_settings') }}">Talen</a>
+      </details>
       <a href="{{ url_for('logout') }}">Uitloggen</a>
     </nav>
   </aside>

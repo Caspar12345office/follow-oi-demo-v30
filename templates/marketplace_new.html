@@ -3,7 +3,7 @@
 {% block content %}
 <div class="oi-line"></div>
 <div class="card">
-  <h2>Nieuw product op de circulaire marketplace</h2>
+  <h2>Nieuw product op de circulaire handelsomgeving</h2>
   <p class="muted">Plaats overtollig meubilair zodat andere facility managers binnen de organisatie dit kunnen reserveren.</p>
   <form method="post" enctype="multipart/form-data">
     <div class="form-row">
@@ -20,7 +20,16 @@
       <div><label>Foto product</label><input name="marketplace_photo" type="file" accept="image/*"><small class="muted">Deze foto wordt zichtbaar in de marketplace-advertentie.</small></div>
     </div>
     <label>Toelichting</label><textarea name="marketplace_note" rows="5" placeholder="Beschrijf aantallen, staat, bijzonderheden, ophaalinstructies of voorwaarden."></textarea>
-    <div class="actions" style="margin-top:16px"><button class="btn">Plaatsen op marketplace</button><a class="btn secondary" href="{{ url_for('marketplace') }}">Annuleren</a></div>
+
+    <div class="oi-line" style="margin-top:18px"></div>
+    <label>Vervoersopties die je aanbiedt</label>
+    <p class="muted" style="margin:-2px 0 8px">Vink aan welke vervoersopties een afnemer mag kiezen. Wil je bijvoorbeeld geen ophalen toestaan? Laat die dan uit.</p>
+    {% for key, label, desc in DELIVERY_OPTIONS %}
+    <label style="font-weight:600"><input type="checkbox" name="delivery_options" value="{{ key }}" checked style="width:auto"> {{ label }}</label>
+    <small class="muted" style="display:block;margin:-4px 0 8px 22px">{{ desc }}</small>
+    {% endfor %}
+
+    <div class="actions" style="margin-top:16px"><button class="btn">Plaatsen op handelsomgeving</button><a class="btn secondary" href="{{ url_for('marketplace') }}">Annuleren</a></div>
   </form>
 </div>
 {% endblock %}

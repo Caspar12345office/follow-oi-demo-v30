@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Shopify-koppeling{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Shopify-koppeling</h2>
+  <p class="muted">Koppel je Shopify-winkel om alle producten automatisch in te laden in de productcatalogus. Je kunt deze instellingen hier wijzigen — ook op de live Render-demo.</p>
+  {% if message %}
+  <div class="card" style="border-left:5px solid {{ 'var(--success)' if ok else 'var(--danger)' }};margin:14px 0 0">
+    <strong>{{ 'Gelukt' if ok else 'Let op' }}</strong>
+    <p class="muted" style="margin:6px 0 0">{{ message }}</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid grid3">
+  <div class="card"><div class="muted">Producten in catalogus</div><div class="kpi">{{ product_count }}</div></div>
+  <div class="card"><div class="muted">Via Shopify ingeladen</div><div class="kpi">{{ shopify_count }}</div></div>
+  <div class="card"><div class="muted">Laatste synchronisatie</div><div class="kpi" style="font-size:16px">{{ cfg.shopify_last_sync or '—' }}</div></div>
+</div>
+
+<div class="card">
+  <h3>Verbindingsinstellingen</h3>
+  <form method="post">
+    <div class="form-row">
+      <div>
+        <label>Shopify-domein</label>
+        <input name="shopify_domain" value="{{ cfg.shopify_domain }}" placeholder="jouwwinkel.myshopify.com">
+      </div>
+      <div>
+        <label>Admin API-toegangstoken</label>
+        <input name="shopify_token" type="password" placeholder="{{ 'Token is opgeslagen — laat leeg om te behouden' if has_token else 'shpat_…' }}" autocomplete="off">
+      </div>
+      <div>
+        <label>API-versie</label>
+        <input name="shopify_api_version" value="{{ cfg.shopify_api_version }}" placeholder="2024-07">
+      </div>
+    </div>
+    <div class="actions" style="margin-top:14px">
+      <button class="btn" name="action" value="save">Opslaan</button>
+      <button class="btn secondary" name="action" value="test">Verbinding testen</button>
+      <button class="btn success" name="action" value="sync" onclick="this.textContent='Bezig met synchroniseren…'">Producten synchroniseren</button>
+    </div>
+  </form>
+  {% if cfg.shopify_last_result %}<p class="muted" style="margin-top:12px">Laatste resultaat: {{ cfg.shopify_last_result }}</p>{% endif %}
+</div>
+
+<div class="card">
+  <h3>Hoe kom ik aan een toegangstoken?</h3>
+  <ol class="muted" style="line-height:1.7">
+    <li>Ga in Shopify naar <strong>Settings → Apps and sales channels → Develop apps</strong>.</li>
+    <li>Maak een <strong>custom app</strong> aan (bijv. "Follow O-I").</li>
+    <li>Geef onder <strong>Admin API scopes</strong> minimaal <code>read_products</code> rechten.</li>
+    <li>Installeer de app en kopieer het <strong>Admin API access token</strong> (begint met <code>shpat_</code>).</li>
+    <li>Plak het token hierboven, sla op, test de verbinding en klik op synchroniseren.</li>
+  </ol>
+  <p class="muted">Het token wordt veilig opgeslagen en nooit op het scherm getoond. Synchroniseren werkt het bestaande aanbod bij en voegt nieuwe producten toe.</p>
+</div>
+{% endblock %}

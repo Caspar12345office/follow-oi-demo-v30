@@ -12,7 +12,7 @@
   <div class="card">
     <h2>Snelle acties</h2>
     <div class="actions">
-      <a class="btn" href="{{ url_for('marketplace') }}">Circulaire marketplace</a>
+      <a class="btn" href="{{ url_for('marketplace') }}">Circulaire handelsomgeving</a>
       <a class="btn secondary" href="{{ url_for('ticket_new') }}">Ticket aanmaken</a>
       <a class="btn secondary" href="{{ url_for('products') }}">Productcatalogus</a>
       <a class="btn secondary" href="{{ url_for('orders') }}">Offerteoverzicht</a>
@@ -30,6 +30,47 @@
     <p class="muted">Voor vragen over inrichting, hergebruik, service, verhuizingen of nieuwe projecten.</p>
     <p class="muted">Voor algemene vragen of bij afwezigheid kun je contact opnemen via <a href="mailto:info@office-interior.com">info@office-interior.com</a> of <a href="tel:+31850481444">085-0481444</a>.</p>
   </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <div>
+      <h2 style="margin-bottom:4px">Meubilair op de kaart</h2>
+      <p class="muted" style="margin:0">Locaties in Nederland waar klanten meubilair hebben staan. Klik op een stip voor details.</p>
+    </div>
+    <span class="pill">{{ map_points|length }} locatie(s){% if map_unmatched %} · {{ map_unmatched }} niet op kaart{% endif %}</span>
+  </div>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <div id="nl-map" style="height:420px;border-radius:16px;margin-top:14px;border:1px solid var(--line);z-index:0"></div>
+  {% if not map_points %}<p class="muted" style="margin-top:10px">Nog geen herkenbare plaatsnamen in de locaties. Voeg een plaatsnaam toe aan de locatie van een asset (bijv. "Arnhem HQ") om stippen te tonen.</p>{% endif %}
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    (function(){
+      var points = {{ map_points|tojson }};
+      var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#0f3d3e';
+      function init(){
+        if(typeof L === 'undefined'){ setTimeout(init, 200); return; }
+        var map = L.map('nl-map', {scrollWheelZoom:false}).setView([52.15, 5.4], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18, attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+        var bounds = [];
+        points.forEach(function(p){
+          var r = Math.min(26, 9 + p.count * 2);
+          var m = L.circleMarker([p.lat, p.lng], {
+            radius: r, color: accent, weight: 2, fillColor: accent, fillOpacity: 0.55
+          }).addTo(map);
+          var clients = p.clients.join(', ');
+          var locs = p.locations.join('<br>');
+          m.bindPopup('<strong>' + p.name + '</strong><br>' + p.count + ' asset(s)<br><span style="color:#6b7280">' + clients + '</span><br>' + locs);
+          bounds.push([p.lat, p.lng]);
+        });
+        if(bounds.length === 1){ map.setView(bounds[0], 9); }
+        else if(bounds.length > 1){ map.fitBounds(bounds, {padding:[40,40]}); }
+      }
+      init();
+    })();
+  </script>
 </div>
 
 <div class="card">

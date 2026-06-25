@@ -1,1 +1,48 @@
-{% extends 'base.html' %}{% block title %}Nieuw meubilair{% endblock %}{% block content %}<div class="card"><form method="post"><div class="form-row"><div><label>Klant</label><select name="client_id">{% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div><div><label>Assetcode</label><input name="asset_code" required></div><div><label>RFID</label><input name="rfid" placeholder="Automatisch indien leeg"></div><div><label>Categorie</label><input name="category" required></div><div><label>Merk</label><input name="brand"></div><div><label>Model</label><input name="model"></div><div><label>Locatie</label><input name="location"></div><div><label>Ruimte</label><input name="room"></div><div><label>Verdieping</label><input name="floor"></div><div><label>Status</label><input name="status" value="in gebruik"></div><div><label>Conditie 1-5</label><input name="condition_score" value="4"></div><div><label>Aanschafdatum</label><input type="date" name="purchase_date"></div><div><label>Circulaire bron</label><input name="circular_source"></div><div><label>CO2 kg</label><input name="co2_kg" value="0"></div><div><label>Materiaal kg</label><input name="material_kg" value="0"></div><div><label>Kostenbesparing</label><input name="cost_saving_eur" value="0"></div><div><label>Marketplace status</label><select name="marketplace_status"><option value="niet beschikbaar">Niet beschikbaar</option><option value="beschikbaar">Beschikbaar</option></select></div><div><label>Beschikbaar vanaf</label><input type="date" name="marketplace_available_from"></div></div><label>Marketplace toelichting</label><textarea name="marketplace_note"></textarea><br><br><button class="btn">Opslaan</button></form></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Meubilair toevoegen{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Meubilair toevoegen</h2>
+  <p class="muted">Vul minimaal de klant en de categorie in. De rest is optioneel — assetcode en RFID worden automatisch aangemaakt als je ze leeg laat.</p>
+  <form method="post">
+    <h3>Basis</h3>
+    <div class="form-row">
+      <div><label>Klant *</label><select name="client_id" required>{% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+      <div><label>Categorie *</label><input name="category" required placeholder="Bijv. Bureaustoel, bureau, kast"></div>
+      <div><label>Merk</label><input name="brand"></div>
+      <div><label>Model</label><input name="model"></div>
+    </div>
+
+    <h3 style="margin-top:18px">Locatie</h3>
+    <div class="form-row">
+      <div><label>Locatie</label><input name="location" placeholder="Bijv. Arnhem HQ"></div>
+      <div><label>Ruimte</label><input name="room" placeholder="Bijv. 3.12"></div>
+      <div><label>Verdieping</label><input name="floor"></div>
+      <div><label>Status</label><input name="status" value="in gebruik"></div>
+    </div>
+
+    <h3 style="margin-top:18px">Detail</h3>
+    <div class="form-row">
+      <div><label>Conditie 1-5</label><input name="condition_score" type="number" min="1" max="5" value="4"></div>
+      <div><label>Aanschafdatum</label><input type="date" name="purchase_date"></div>
+      <div><label>Assetcode</label><input name="asset_code" placeholder="Automatisch indien leeg"></div>
+      <div><label>RFID</label><input name="rfid" placeholder="Automatisch indien leeg"></div>
+    </div>
+
+    <details style="margin-top:14px">
+      <summary class="muted" style="cursor:pointer">Circulariteit & impact (optioneel)</summary>
+      <div class="form-row" style="margin-top:10px">
+        <div><label>Circulaire bron</label><input name="circular_source" placeholder="Bijv. bestaand, second-life, nieuw circulair"></div>
+        <div><label>CO₂ kg</label><input name="co2_kg" type="number" value="0"></div>
+        <div><label>Materiaal kg</label><input name="material_kg" type="number" value="0"></div>
+        <div><label>Kostenbesparing (€)</label><input name="cost_saving_eur" type="number" value="0"></div>
+      </div>
+    </details>
+
+    <div class="actions" style="margin-top:18px">
+      <button class="btn">Opslaan</button>
+      <a class="btn secondary" href="{{ url_for('assets') }}">Annuleren</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Lokale database & uploads — horen NIET in git (Render gebruikt /var/data)
+follow_oi.db
+*.sqlite
+*.sqlite3
+uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build-artefacten
+*.zip
+
+# Secrets & lokale tooling — NOOIT committen (Render gebruikt SECRET_KEY env var)
+.secret_key
+.claude/

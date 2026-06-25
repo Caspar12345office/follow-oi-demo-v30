@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Vormgeving{% endblock %}
+{% block content %}
+{% set color_labels = {
+  'accent':'Hoofdkleur', 'accent2':'Accentkleur', 'bg':'Achtergrond',
+  'panel':'Kaarten / panelen', 'text':'Tekstkleur', 'muted':'Subtiele tekst',
+  'line':'Randen en lijnen', 'soft':'Zachte vlakken', 'danger':'Waarschuwing (rood)',
+  'success':'Succes (groen)', 'warn':'Let op (oranje)'
+} %}
+<div class="card">
+  <h2>Vormgeving</h2>
+  <p class="muted">Pas hier de huisstijl van de hele tool aan: kleuren, lettertype, logo en de merknaam. Wijzigingen blijven bewaard en gelden voor alle pagina's.</p>
+  {% if saved %}<div class="flash">Vormgeving opgeslagen. Herlaad een pagina om alles bijgewerkt te zien.</div>{% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    <h3>Merk</h3>
+    <div class="form-row">
+      <div>
+        <label>Merknaam</label>
+        <input name="brand_name" value="{{ settings.brand_name }}">
+      </div>
+      <div>
+        <label>Ondertitel</label>
+        <input name="brand_tagline" value="{{ settings.brand_tagline }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Lettertype</label>
+        <select name="font_family">
+          {% set fonts = [
+            ('system-ui, -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif','Systeemlettertype (standaard)'),
+            ('\'Jost\', \'Montserrat\', Arial, sans-serif','Jost (lijkt op logo)'),
+            ('\'Montserrat\', \'Inter\', Arial, sans-serif','Montserrat'),
+            ('Inter, Arial, sans-serif','Inter'),
+            ('Arial, Helvetica, sans-serif','Arial'),
+            ('Georgia, \'Times New Roman\', serif','Georgia (serif)'),
+            ('\'Trebuchet MS\', sans-serif','Trebuchet MS'),
+            ('\'Courier New\', monospace','Courier (monospace)'),
+            ('system-ui, sans-serif','Systeemlettertype')
+          ] %}
+          {% for value, name in fonts %}
+          <option value="{{ value }}" {% if settings.font_family == value %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Logo (PNG/JPG/SVG)</label>
+        <input type="file" name="logo" accept="image/*">
+        {% if settings.logo_path %}
+        <div class="muted" style="margin-top:8px;display:flex;align-items:center;gap:10px">
+          <img src="{{ url_for('uploads', filename=settings.logo_path) }}" alt="Logo" style="max-height:40px;max-width:120px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px">
+          <label style="font-weight:400;margin:0"><input type="checkbox" name="remove_logo" value="1" style="width:auto"> Logo verwijderen</label>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="oi-line"></div>
+    <h3>Kleuren</h3>
+    <div class="grid grid3">
+      {% for key in color_keys %}
+      <div>
+        <label>{{ color_labels.get(key, key) }}</label>
+        <input type="color" name="{{ key }}" value="{{ settings[key] }}" style="height:46px;padding:4px">
+      </div>
+      {% endfor %}
+    </div>
+
+    <br>
+    <button class="btn">Opslaan</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>Terugzetten</h3>
+  <p class="muted">Zet alle kleuren, lettertype, logo en merknaam terug naar de standaard Office-Interior-stijl.</p>
+  <form method="post" onsubmit="return confirm('Weet je zeker dat je de vormgeving wilt terugzetten naar standaard?');">
+    <input type="hidden" name="reset" value="1">
+    <button class="btn secondary">Terug naar standaard</button>
+  </form>
+</div>
+{% endblock %}

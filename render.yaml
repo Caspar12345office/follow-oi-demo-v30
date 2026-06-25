@@ -4,3 +4,17 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
+    # Persistente schijf: zonder dit reset de database (en uploads) bij elke deploy.
+    disk:
+      name: follow-oi-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      # Genereer eenmalig een willekeurige waarde in het Render-dashboard (Generate).
+      - key: SECRET_KEY
+        generateValue: true
+      # Bewaar database en uploads op de persistente schijf i.p.v. de tijdelijke build.
+      - key: FOLLOW_OI_DB_PATH
+        value: /var/data/follow_oi.db
+      - key: FOLLOW_OI_UPLOAD_FOLDER
+        value: /var/data/uploads
