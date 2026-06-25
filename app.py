@@ -189,7 +189,7 @@ THEME_DEFAULTS = {
     "brand_name": "Follow O-I",
     "brand_tagline": "Inzicht in uw meubilair",
     "logo_path": "",
-    "font_family": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    "font_family": "system-ui, sans-serif",
     "accent": "#0f3d3e",
     "accent2": "#b88a44",
     "bg": "#f6f3ee",

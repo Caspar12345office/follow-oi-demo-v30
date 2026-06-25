@@ -29,15 +29,14 @@
         <label>Lettertype</label>
         <select name="font_family">
           {% set fonts = [
-            ('system-ui, -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif','Systeemlettertype (standaard)'),
+            ('system-ui, sans-serif','Systeemlettertype (standaard)'),
             ('\'Jost\', \'Montserrat\', Arial, sans-serif','Jost (lijkt op logo)'),
             ('\'Montserrat\', \'Inter\', Arial, sans-serif','Montserrat'),
             ('Inter, Arial, sans-serif','Inter'),
             ('Arial, Helvetica, sans-serif','Arial'),
             ('Georgia, \'Times New Roman\', serif','Georgia (serif)'),
             ('\'Trebuchet MS\', sans-serif','Trebuchet MS'),
-            ('\'Courier New\', monospace','Courier (monospace)'),
-            ('system-ui, sans-serif','Systeemlettertype')
+            ('\'Courier New\', monospace','Courier (monospace)')
           ] %}
           {% for value, name in fonts %}
           <option value="{{ value }}" {% if settings.font_family == value %}selected{% endif %}>{{ name }}</option>
